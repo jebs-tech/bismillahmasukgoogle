@@ -36,7 +36,8 @@ Kategori utama produk/tiket yang digunakan:
 - **Jenis Olahraga**: Volley.  
 - **Venue/Stadion**: GOR Jati Diri Semarang, GOR Tridarma Gresik 
 - **Kategori Tiket**: Gold, Bronze, Silver.
-- **Harga Tiket**: Bervariasi berdasarkan kategori kursi & pertandingan.  
+- **Harga Tiket**: Bervariasi berdasarkan kategori kursi & pertandingan.
+- Link datast: https://drive.google.com/drive/folders/16AgYpTIt7jdTPOmtVyf-xRYUWcLCF0Ay?usp=share_link
 
 Dataset awal dapat diperoleh dari:  
 - Situs resmi penyelenggara.  
