@@ -1,0 +1,60 @@
+{% extends "base.html" %} {% block content %}
+<h1>Dashboard Akun: {{ user.username }}</h1>
+<p>Halo, {{ user.first_name|default:user.username }}!</p>
+
+<hr>
+
+<h2>Tim Favorit Kamu</h2>
+{% if preferred_teams %}
+    <ul>
+        {% for team in preferred_teams %}
+            <li>{{ team.name }}</li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>Kamu belum memilih tim favorit. <a href="#">Edit Profil</a></p>
+{% endif %}
+
+<hr>
+
+<h2>Tiket Aktif</h2>
+{% if active_tickets %}
+    <p>Ini adalah tiketmu yang masih valid:</p>
+    {% for ticket in active_tickets %}
+        <div class="ticket-card" style="border: 1px solid #008000; padding: 10px; margin-bottom: 10px; background: #f0fff0;">
+            <h4>{{ ticket.event.name }}</h4>
+            <p>Tanggal: {{ ticket.event.event_date|date:"d M Y, H:i" }}</p>
+            <p>Status: <strong>{{ ticket.get_status_display }}</strong></p>
+        </div>
+    {% endfor %}
+{% else %}
+    <p>Kamu tidak memiliki tiket aktif saat ini.</p>
+{% endif %}
+
+<hr>
+
+<h2>Riwayat Pembelian</h2>
+{% if purchase_history %}
+    <p>Semua transaksi yang pernah kamu lakukan:</p>
+    {% for purchase in purchase_history %}
+        <div class="purchase-history-item" style="border: 1px solid #ccc; padding: 10px; margin-bottom: 10px;">
+            <p>
+                <strong>Order ID: #{{ purchase.id }}</strong> | 
+                Tanggal: {{ purchase.created_at|date:"d M Y" }} | 
+                Total: Rp {{ purchase.total_amount }}
+            </p>
+            <ul>
+                {% for ticket in purchase.tickets.all %}
+                    <li>
+                        {{ ticket.event.name }} 
+                        (Status: {{ ticket.get_status_display }})
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endfor %}
+{% else %}
+    <p>Kamu belum pernah melakukan pembelian.</p>
+{% endif %}
+
+{% endblock %}

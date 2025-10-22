@@ -1,0 +1,17 @@
+{% block content %}
+  <h2>Login</h2>
+  
+  {% if form.errors %}
+    <p style="color: red;">Username atau password Anda salah. Silakan coba lagi.</p>
+  {% endif %}
+
+  <form method="post" action="{% url 'user:login' %}">
+    {% csrf_token %}
+    
+    {{ form.as_p }}
+    
+    <button type="submit">Login</button>
+  </form>
+
+  <p>Belum punya akun? <a href="{% url 'user:register' %}">Daftar di sini</a>.</p>
+{% endblock %}

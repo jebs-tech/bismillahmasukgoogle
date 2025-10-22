@@ -1,0 +1,20 @@
+{% block content %}
+  <h2>Buat Akun Baru</h2>
+
+  <form method="post">
+    {% csrf_token %}
+    
+    {% if form.errors %}
+        <div style="color: red;">
+            {{ form.non_field_errors }}
+        </div>
+    {% endif %}
+
+    {{ form.as_p }}
+    
+    <button type="submit">Daftar</button>
+  </form>
+  
+  <br>
+  <p>Sudah punya akun? <a href="{% url 'user:login' %}">Login di sini</a>.</p>
+{% endblock %}
