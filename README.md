@@ -27,7 +27,7 @@
 4. **E-Ticket (QR Code)** → tiket otomatis terkirim ke akun/email pengguna.  
 5. **Akun Pengguna** → riwayat pembelian, tiket aktif, preferensi tim.  
 6. **Promo** → diskon, bundle tiket.
-7. **Review Venue & Notifikasi** → rating stadion + pengingat jadwal pertandingan.  
+7. **Forum & Notifikasi** → Forum discussion + pengingat jadwal pertandingan.  
 
 ---
 
