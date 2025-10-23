@@ -68,4 +68,4 @@ def api_book(request):
         booking.seats.add(*seats_qs)
         seats_qs.update(is_booked=True)
 
-    return JsonResponse({'ok': True, 'booking_id': booking.id, 'total_price': total})
+    return JsonResponse({'ok': True, 'booking_id': booking.id, 'total_price': total})      
