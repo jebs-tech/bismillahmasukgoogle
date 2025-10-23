@@ -1,0 +1,99 @@
+{% load static %}
+<div class="bg-orange-100 rounded-xl sm:rounded-2xl md:rounded-3xl shadow-lg sm:shadow-xl md:shadow-2xl p-6 sm:p-8 overflow-hidden">
+    <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold text-orange-800 text-center mb-6">Daftar Pertandingan</h2>
+    
+    {% if matches %}
+    <div class="space-y-4">
+        {% for match in matches %}
+        <div class="bg-white rounded-lg p-4 sm:p-6 shadow-md hover:shadow-lg transition duration-200">
+            <!-- MOBILE: STACKED VERSION -->
+            <div class="block sm:hidden">
+                <!-- Logo vs Logo - Center -->
+                <div class="flex justify-center items-center gap-4 mb-4">
+                    <img src="{% static 'images/default_team.png' %}" 
+                         alt="{{ match.home_team.name }}"
+                         class="w-12 h-12 object-contain">
+                    <span class="text-lg font-bold text-gray-600">VS</span>
+                    <img src="{% static 'images/default_team.png' %}" 
+                         alt="{{ match.away_team.name }}"
+                         class="w-12 h-12 object-contain">
+                </div>
+                
+                <!-- Nama vs Nama - Center -->
+                <div class="text-center mb-3">
+                    <div class="flex justify-center items-center gap-3">
+                        <span class="font-semibold text-gray-800">{{ match.home_team.name }}</span>
+                        <span class="text-lg font-bold text-gray-600">VS</span>
+                        <span class="font-semibold text-gray-800">{{ match.away_team.name }}</span>
+                    </div>
+                </div>
+                
+                <!-- Tanggal & Lokasi - Center -->
+                <div class="text-center text-sm text-gray-600 mb-4">
+                    <div class="flex flex-col gap-1">
+                        <span>📅 {{ match.start_time|date:"d F Y, H:i" }}</span>
+                        <span>📍 {{ match.venue.name|default:"Venue TBA" }}</span>
+                    </div>
+                </div>
+                
+                <!-- Tombol Book Now - Center -->
+                <div class="text-center">
+                    <a href="http://booking-system-temen.com" 
+                       target="_blank"
+                       class="bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600 font-medium transition duration-200 inline-block">
+                       Book Now
+                    </a>
+                </div>
+            </div>
+            
+            <!-- DESKTOP: HORIZONTAL VERSION -->
+            <div class="hidden sm:flex items-center justify-between gap-4">
+                <!-- KIRI: Logo vs Logo + Nama vs Nama + Info -->
+                <div class="flex-1 flex items-center gap-6">
+                    <!-- Logo vs Logo -->
+                    <div class="flex items-center gap-3">
+                        <img src="{% static 'images/default_team.png' %}" 
+                             alt="{{ match.home_team.name }}"
+                             class="w-12 h-12 object-contain">
+                        <span class="text-lg font-bold text-gray-600">VS</span>
+                        <img src="{% static 'images/default_team.png' %}" 
+                             alt="{{ match.away_team.name }}"
+                             class="w-12 h-12 object-contain">
+                    </div>
+                    
+                    <!-- Nama vs Nama + Info -->
+                    <div class="flex-1">
+                        <!-- Nama vs Nama -->
+                        <div class="flex items-center gap-3 mb-2">
+                            <span class="font-semibold text-gray-800">{{ match.home_team.name }}</span>
+                            <span class="text-lg font-bold text-gray-600">VS</span>
+                            <span class="font-semibold text-gray-800">{{ match.away_team.name }}</span>
+                        </div>
+                        
+                        <!-- Tanggal & Lokasi -->
+                        <div class="flex gap-4 text-sm text-gray-600">
+                            <span>📅 {{ match.start_time|date:"d F Y, H:i" }}</span>
+                            <span>📍 {{ match.venue.name|default:"Venue TBA" }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- KANAN: Tombol Book Now -->
+                <div class="flex-shrink-0">
+                    <a href="http://booking-system-temen.com" 
+                       target="_blank"
+                       class="bg-orange-500 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg hover:bg-orange-600 font-medium transition duration-200 whitespace-nowrap text-sm sm:text-base">
+                       Book Now
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-12">
+        <img src="{% static 'images/empty.png' %}" class="mx-auto w-24 h-24 mb-4 object-contain" alt="No matches">
+        <p class="text-gray-500 text-lg">Tidak ada pertandingan yang sesuai dengan filter.</p>
+    </div>
+    {% endif %}
+</div>
