@@ -6,11 +6,12 @@ from django.contrib import messages
 from django.urls import reverse
 # Perbaikan: Hapus UserCreationForm ganda
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm 
+from .forms import ServetixUserCreationForm
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 # Asumsi model ini ada di 'user.models'
 from user.models import Purchase, Ticket, Profile 
 
-@login_required 
+@login_required(login_url='/login')
 def user_profile_view(request):
     user = request.user
     
@@ -34,19 +35,20 @@ def user_profile_view(request):
 # (View promo_list_view kamu yang di-comment biarkan saja)
 
 def register(request):
-    # Jika user sudah login, jangan biarkan ke halaman register
     if request.user.is_authenticated:
-        return redirect('user:profile') # Arahkan ke profil
+        return redirect('user:profile') 
 
-    form = UserCreationForm()
+    # 2. Ganti UserCreationForm menjadi ServetixUserCreationForm
+    form = ServetixUserCreationForm()
 
     if request.method == "POST":
-        form = UserCreationForm(request.POST)
+        # 3. Ganti juga di sini
+        form = ServetixUserCreationForm(request.POST) 
         if form.is_valid():
             form.save()
             messages.success(request, 'Akun berhasil dibuat! Silakan login.')
-            # Perbaikan: Arahkan ke 'user:login' (lihat urls.py di langkah 2)
             return redirect('user:login') 
+            
     context = {'form':form}
     return render(request, 'registration/register.html', context)
 

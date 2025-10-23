@@ -1,20 +1,98 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
 {% block content %}
-  <h2>Buat Akun Baru</h2>
-
-  <form method="post">
-    {% csrf_token %}
-    
-    {% if form.errors %}
-        <div style="color: red;">
-            {{ form.non_field_errors }}
+<div class="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8">
+        <div class="flex justify-center">
+            <div class="bg-brand-dark-blue text-white font-bold text-3xl px-6 py-2 rounded-lg shadow-lg">
+                SERVE.TIX
+            </div>
         </div>
-    {% endif %}
+        <h4 class="text-center text-xl font-medium text-gray-700 -mt-4 pt-2">
+            Daftar
+        </h4>
+        
+        <div class="bg-white shadow-xl rounded-lg p-8 sm:p-10 -mt-8">
 
-    {{ form.as_p }}
-    
-    <button type="submit">Daftar</button>
-  </form>
-  
-  <br>
-  <p>Sudah punya akun? <a href="{% url 'user:login' %}">Login di sini</a>.</p>
+            {% if form.errors %}
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6" role="alert">
+                <span class="block font-bold mb-2">Oops! Ada kesalahan:</span>
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                        <li class="text-sm">{{ field|capfirst }}: {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+            </div>
+            {% endif %}
+
+
+            <form class="space-y-6" method="post" action="{% url 'user:register' %}">
+                {% csrf_token %}
+
+                <div>
+                    <label for="{{ form.email.id_for_label }}" class="block text-sm font-bold text-gray-700">
+                        Alamat Email
+                    </label>
+                    <div class="mt-1">
+                        {% render_field form.email class="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-brand-orange focus:border-brand-orange sm:text-sm" placeholder="Masukkan Alamat Email" %}
+                    </div>
+                </div>
+
+                <div>
+                    <label for="{{ form.nama_lengkap.id_for_label }}" class="block text-sm font-bold text-gray-700">
+                        Nama Lengkap
+                    </label>
+                    <div class="mt-1">
+                        {% render_field form.nama_lengkap class="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-brand-orange focus:border-brand-orange sm:text-sm" placeholder="Masukkan Nama Lengkap" %}
+                    </div>
+                </div>
+
+                <div>
+                    <label for="{{ form.nomor_telepon.id_for_label }}" class="block text-sm font-bold text-gray-700">
+                        Nomor Telepon
+                    </label>
+                    <div class="mt-1">
+                        {% render_field form.nomor_telepon class="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-brand-orange focus:border-brand-orange sm:text-sm" placeholder="Masukkan Nomor Telepon" %}
+                    </div>
+                </div>
+
+                <div>
+                    <label for="{{ form.password1.id_for_label }}" class="block text-sm font-bold text-gray-700">
+                        Kata Sandi
+                    </label>
+                    <div class="mt-1">
+                        {% render_field form.password1 class="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-brand-orange focus:border-brand-orange sm:text-sm" placeholder="Masukkan Kata Sandi" %}
+                    </div>
+                </div>
+
+                <div>
+                    <label for="{{ form.password2.id_for_label }}" class="block text-sm font-bold text-gray-700">
+                        Konfirmasi Kata Sandi
+                    </label>
+                    <div class="mt-1">
+                        {% render_field form.password2 class="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-brand-orange focus:border-brand-orange sm:text-sm" placeholder="Masukkan Kata Sandi Lagi" %}
+                    </div>
+                </div>
+                
+                <div class="text-xs text-gray-500 space-y-1">
+                    {{ form.password1.help_text|safe }}
+                </div>
+
+
+                <div class="pt-4">
+                    <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-base font-bold text-white bg-brand-light-blue hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-light-blue">
+                        Buat Akun
+                    </button>
+                </div>
+                 <p class="text-sm text-center text-gray-600">
+                    Sudah punya akun? 
+                    <a href="{% url 'user:login' %}" class="font-medium text-brand-light-blue hover:text-blue-700">
+                        Masuk di sini
+                    </a>
+                </p>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}

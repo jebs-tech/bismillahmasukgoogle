@@ -1,15 +1,57 @@
-{% load static %}
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    {% block meta %} {% endblock meta %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SERVE.TIX</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.5/dist/purify.min.js"></script>
-    <link rel="stylesheet" href="{% static 'css/global.css' %}"/>
+    <script>
+        // Konfigurasi warna kustom Tailwind agar sesuai dengan gambar
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'brand-dark-blue': '#1a2a4b',
+                        'brand-gold': '#FFC107',
+                        'brand-orange': '#FFA043',
+                        'brand-light-blue': '#4A69BD',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gradient-to-t from-[#FFEDD5] to-[#FFB6C1] min-h-screen flex flex-col">
 
-  </head>
-  <body>
-  </body>
+    <nav class="bg-brand-dark-blue shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex-shrink-0 flex items-center">
+                    <a href="/" class="text-white text-2xl font-bold">SERVE.TIX</a>
+                </div>
+                
+                <div class="flex items-center">
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'user:profile' %}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                            Profil ({{ user.username }})
+                        </a>
+                        <a href="{% url 'user:logout' %}" class="ml-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-brand-dark-blue bg-gray-200 hover:bg-white">
+                            Logout
+                        </a>
+                    {% else %}
+                        <a href="{% url 'user:login' %}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-brand-dark-blue bg-brand-gold hover:bg-yellow-300 font-bold">
+                            Masuk
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-grow">
+        {% block content %}
+        {% endblock %}
+    </main>
+
+</body>
 </html>

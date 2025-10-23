@@ -21,8 +21,12 @@ class Event(models.Model):
 # Model Profile untuk menyimpan 'Preferensi Tim'
 class Profile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
-    # Fitur: Preferensi Tim
     preferred_teams = models.ManyToManyField(Team, blank=True, related_name='fans')
+    
+    # --- TAMBAHKAN DUA FIELD INI ---
+    nama_lengkap = models.CharField(max_length=255, null=True, blank=True)
+    nomor_telepon = models.CharField(max_length=20, null=True, blank=True)
+    # --------------------------------
 
     def __str__(self):
         return f"{self.user.username}'s Profile"
