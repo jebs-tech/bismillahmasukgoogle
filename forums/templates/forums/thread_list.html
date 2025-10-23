@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Forum Threads</title>
+</head>
+<body>
+  <h1>Daftar Thread Forum</h1>
+
+  <a href="{% url 'create_thread' %}">+ Buat Thread Baru</a>
+  <hr>
+
+  {% if threads %}
+    {% for thread in threads %}
+      <div>
+        <h2><a href="{% url 'thread_detail' thread.id %}">{{ thread.title }}</a></h2>
+        <p>{{ thread.content|truncatechars:100 }}</p>
+        <small>Oleh {{ thread.author.username }} • {{ thread.created_at }}</small>
+      </div>
+      <hr>
+    {% endfor %}
+  {% else %}
+    <p>Belum ada thread.</p>
+  {% endif %}
+</body>
+</html>

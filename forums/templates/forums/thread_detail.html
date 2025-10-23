@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>{{ thread.title }}</title>
+</head>
+<body>
+  <h1>{{ thread.title }}</h1>
+  <p>{{ thread.content }}</p>
+  <small>Oleh {{ thread.author.username|default:"Anonim" }} • {{ thread.created_at }}</small>
+  <hr>
+
+  <h2>Replies</h2>
+  {% if replies %}
+    {% for reply in replies %}
+      <div>
+        <p>{{ reply.content }}</p>
+        <small>Oleh {{ reply.author.username|default:"Anonim" }} • {{ reply.created_at }}</small>
+        <hr>
+      </div>
+    {% endfor %}
+  {% else %}
+    <p>Belum ada balasan.</p>
+  {% endif %}
+
+  <h3>Tambah Balasan</h3>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Kirim</button>
+  </form>
+
+  <a href="{% url 'thread_list' %}">← Kembali ke daftar thread</a>
+</body>
+</html>

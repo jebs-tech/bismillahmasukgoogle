@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Buat Thread Baru</title>
+</head>
+<body>
+  <h1>Buat Thread Baru</h1>
+
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Buat Thread</button>
+  </form>
+
+  <a href="{% url 'thread_list' %}">← Kembali ke daftar thread</a>
+</body>
+</html>
