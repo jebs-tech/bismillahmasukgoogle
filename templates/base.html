@@ -8,25 +8,28 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-50">
-    <!-- NAVBAR NAVY TUA - SIMPLE -->
     <nav class="bg-blue-950 shadow-lg border-b">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
-                <!-- Logo SERVE.TIX yang bisa diklik ke homepage -->
                 <div class="flex items-center">
-                    <a href="http://localhost:8000" class="text-xl sm:text-2xl font-bold">
-                        <span class="text-white">SERVE</span>
-                        <span class="text-yellow-300">.TIX</span>
+                    <a href="#" class="text-xl sm:text-2xl font-bold">
+                        <span class="text-white">SERVE.</span>
+                        <span class="text-yellow-300">TIX</span>
                     </a>
                 </div>
                 
-                <!-- Hanya tombol Tambah Pertandingan untuk staff -->
-                <div>
+                <div class="flex items-center gap-4">
                     {% if user.is_staff %}
-                    <a href="{% url 'match_create' %}" class="bg-yellow-300 text-gray-800 px-4 py-2 rounded-lg hover:bg-yellow-400 font-medium text-sm sm:text-base">
+                    <button onclick="openDjangoFormModal('{% url 'match_create' %}')" 
+                            class="bg-[#F6CA50] text-gray-800 px-4 py-2 rounded-lg hover:bg-yellow-400 font-medium text-sm sm:text-base">
                         Tambah Pertandingan
-                    </a>
+                    </button>
                     {% endif %}
+                    
+                    <!-- TOMBOL MASUK DOANG -->
+                    <a href="#" class="bg-[#F6CA50] text-gray-800 px-4 py-2 rounded-lg hover:bg-yellow-400 font-medium text-sm sm:text-base">
+                        Masuk
+                    </a>
                 </div>
             </div>
         </div>
@@ -35,19 +38,139 @@
     {% block content %}
     {% endblock %}
 
-    <!-- FOOTER -->
+    <div id="modalContainer"></div>
+
     <footer class="bg-blue-950 text-white py-6 sm:py-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="mb-4">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col">
+            <!-- SERVETIX - di atas -->
+            <div class="flex items-center mb-2">
                 <h2 class="text-xl sm:text-2xl font-bold">
-                    <span class="text-white">SERVE</span>
-                    <span class="text-yellow-300">.TIX</span>
+                    <span class="text-white">SERVE.</span>
+                    <span class="text-yellow-300">TIX</span>
                 </h2>
             </div>
+            
+            <!-- Copyright - di bawah -->
             <div class="text-sm sm:text-base text-gray-300">
                 <p>© 2025 SERVETIX. All rights reserved.</p>
             </div>
         </div>
-    </footer>
+    </div>
+</footer>
+
+    <script>
+    // SCRIPT TETAP SAMA
+    window.modalFormURL = null;
+
+    function getCookie(name) {
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+            cookie = cookie.trim();
+            if (cookie.startsWith(name + '=')) {
+                return decodeURIComponent(cookie.substring(name.length + 1));
+            }
+        }
+        return null;
+    }
+
+    async function openDjangoFormModal(url) {
+        window.modalFormURL = url;
+        try {
+            const response = await fetch(url);
+            const html = await response.text();
+            
+            document.getElementById('modalContainer').innerHTML = `
+                <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4" onclick="if(event.target === this) closeModal()">
+                    <div class="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+                        ${html}
+                    </div>
+                </div>
+            `;
+        } catch (error) {
+            alert('Error loading form');
+            window.location.href = url;
+        }
+    }
+
+    function closeModal() {
+        document.getElementById('modalContainer').innerHTML = '';
+        window.modalFormURL = null;
+    }
+
+    async function deleteMatch(url, button) {
+        if (!confirm('Yakin hapus pertandingan?')) return;
+        
+        button.disabled = true;
+        button.textContent = 'Menghapus...';
+        
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+                const card = button.closest('.bg-\\[linear-gradient\\]');
+                card?.remove();
+                window.location.reload();
+            } else {
+                alert('Gagal menghapus');
+            }
+        } catch (error) {
+            alert('Network error');
+        } finally {
+            button.disabled = false;
+            button.textContent = 'Delete';
+        }
+    }
+
+    window.handleFormSubmit = async function(event) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+        const submitBtn = form.querySelector('button[type="submit"]');
+        
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Menyimpan...';
+        
+        try {
+            const response = await fetch(window.modalFormURL, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+                }
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+                closeModal();
+                window.location.reload();
+            } else {
+                alert('Error: ' + JSON.stringify(data.errors));
+            }
+        } catch (error) {
+            alert('Network error');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Simpan';
+        }
+    };
+
+    window.setupModalForm = function() {
+        const form = document.getElementById('modalForm');
+        if (form) form.onsubmit = window.handleFormSubmit;
+    };
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeModal();
+    });
+    </script>
 </body>
 </html>
