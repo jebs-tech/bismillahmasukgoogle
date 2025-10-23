@@ -19,4 +19,6 @@ from django.urls import path
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('create/', views.create_payment, name='create_payment'),
+    path('payment/', include('payment.urls')),
 ]
