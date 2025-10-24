@@ -37,6 +37,7 @@ ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 
 INSTALLED_APPS = [
     'user',
+    'matches.apps.MatchesConfig',
     'widget_tweaks',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -46,7 +47,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.humanize',
     'payment',
-    'matches',
     'voucher',
     'homepage',
 ]
@@ -66,7 +66,7 @@ ROOT_URLCONF = 'ServeTix.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

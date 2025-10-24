@@ -1,0 +1,384 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Checkout — {{ match.title }}{% endblock %}
+
+{% block content %}
+<section class="max-w-3xl mx-auto py-12 px-4 relative">
+  <!-- Tombol kembali ke match_detail di kiri atas -->
+  <div class="mb-4">
+    <a href="{% url 'matches:match_detail' match.id %}" class="inline-flex items-center gap-2 text-sm text-serve-navy hover:underline">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+      </svg>
+      Kembali ke {{ match.title }}
+    </a>
+  </div>
+
+  <h1 class="text-4xl font-bold text-serve-navy mb-8">Detail Pembeli</h1>
+
+  <form id="checkout-form" class="space-y-6 bg-white shadow-lg rounded-2xl p-8" method="post">
+    {% csrf_token %}
+    <input type="hidden" id="match-id" name="match_id" value="{{ match.id }}" />
+    <input type="hidden" id="selected-seat-ids" name="seat_ids" value="" />
+
+    <div id="passengers-container" class="space-y-4 mt-4"></div>
+
+    <div class="flex gap-2">
+      <button id="add-ticket-btn" type="button" class="px-4 py-2 border rounded-md bg-brand-orange text-white hover:opacity-95">➕ Tambah Tiket</button>
+      <button id="remove-last-btn" type="button" class="px-4 py-2 border rounded-md text-sm hover:bg-gray-100">🗑️ Hapus Tiket Terakhir</button>
+      <div class="ml-auto text-sm text-gray-500 self-center" id="tickets-count">1 tiket</div>
+    </div>
+
+    <!-- Ringkasan harga -->
+    <div class="bg-gray-50 p-4 rounded-lg mt-3">
+      <div class="flex justify-between mb-2">
+        <div class="text-sm text-gray-600">Harga per tiket (berdasarkan kategori tiap tiket)</div>
+        <div id="price-per-ticket" class="font-medium">—</div>
+      </div>
+      <div class="flex justify-between">
+        <div class="text-sm text-gray-600">Total</div>
+        <div id="total-price" class="font-semibold">Rp0</div>
+      </div>
+    </div>
+
+    <div id="preselected-seats" class="text-sm text-gray-700 mt-2"></div>
+
+    <button id="submit-btn" type="submit" class="w-full bg-brand-orange text-white font-semibold py-2 rounded-full hover:bg-brand-orange/90">
+      Lanjutkan Pembayaran
+    </button>
+
+    <div id="checkout-msg" class="text-sm mt-2"></div>
+  </form>
+</section>
+
+<template id="passenger-template">
+  <div class="passenger-form border rounded-lg p-4 bg-white">
+    <div class="flex justify-between items-center mb-3">
+      <div class="font-medium passenger-title">Tiket #<span class="ticket-index">1</span></div>
+      <div class="text-sm text-gray-500 passenger-sub">Isilah data pembeli</div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-3">
+      <div>
+        <label class="block text-sm font-semibold mb-1">Nama Lengkap (sesuai KTP/Passport)</label>
+        <input name="p_name" type="text" class="p_name w-full border rounded-lg px-3 py-2" placeholder="Nama penumpang" required />
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold mb-1">Email (opsional)</label>
+        <input name="p_email" type="email" class="p_email w-full border rounded-lg px-3 py-2" placeholder="Email penumpang (boleh kosong)" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold mb-1">Nomor Telepon (opsional)</label>
+        <input name="p_phone" type="tel" class="p_phone w-full border rounded-lg px-3 py-2" placeholder="No. telepon" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold mb-2">Jenis Kelamin</label>
+        <div class="flex gap-2">
+          <button type="button" class="gender-btn-mini flex-1 border rounded-full py-2 text-sm" data-gender="Laki-laki">Laki-laki</button>
+          <button type="button" class="gender-btn-mini flex-1 border rounded-full py-2 text-sm" data-gender="Perempuan">Perempuan</button>
+        </div>
+        <input name="p_gender" type="hidden" class="p_gender" value="" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold mb-1">Kategori Tempat Duduk</label>
+        <select name="p_category" class="p_category w-full border rounded-lg px-3 py-2">
+          <option value="">Pilih kategori</option>
+          {% for cat in categories %}
+            <option value="{{ cat.name|escapejs }}" data-price="{{ cat.price|default:0 }}">{{ cat.name }} — Rp{{ cat.price|default:0 }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+  </div>
+</template>
+
+<!-- json_script: aman untuk memasukkan data kategori ke JS -->
+{{ categories_data|json_script:"seat-categories-data" }}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Ambil categories data yang aman dari json_script
+  const categoriesData = JSON.parse(document.getElementById('seat-categories-data').textContent || '[]');
+  // buat lookup name->price
+  const categoriesPrice = {};
+  categoriesData.forEach(c => {
+    categoriesPrice[c.name] = Number(c.price) || 0;
+  });
+
+  // util csrftoken
+  function getCookie(name) {
+    const v = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+    return v ? v.pop() : '';
+  }
+
+  function getSeatsFromQuery() {
+    const params = new URLSearchParams(window.location.search);
+    const s = params.get('seats') || '';
+    if (!s) return [];
+    return s.split(',').map(x => x.trim()).filter(Boolean).map(x => parseInt(x));
+  }
+
+  // elements
+  const passengersContainer = document.getElementById('passengers-container');
+  const passengerTemplate = document.getElementById('passenger-template');
+  const addTicketBtn = document.getElementById('add-ticket-btn');
+  const removeLastBtn = document.getElementById('remove-last-btn');
+  const ticketsCountLabel = document.getElementById('tickets-count');
+  const matchId = document.getElementById('match-id').value;
+  const selectedSeatInput = document.getElementById('selected-seat-ids');
+  const preselectedDiv = document.getElementById('preselected-seats');
+  const pricePerTicket = document.getElementById('price-per-ticket');
+  const totalPrice = document.getElementById('total-price');
+  const checkoutMsg = document.getElementById('checkout-msg');
+
+  let seatsData = [];
+  let selectedSeatIds = getSeatsFromQuery();
+
+  // add/remove passenger form
+  function addPassengerForm(values = {}) {
+    const node = passengerTemplate.content.cloneNode(true);
+    const wrapper = node.querySelector('.passenger-form');
+
+    if (values.name) wrapper.querySelector('.p_name').value = values.name;
+    if (values.email) wrapper.querySelector('.p_email').value = values.email;
+    if (values.phone) wrapper.querySelector('.p_phone').value = values.phone;
+    if (values.gender) wrapper.querySelector('.p_gender').value = values.gender;
+    if (values.category) {
+      const sel = wrapper.querySelector('.p_category');
+      const opt = Array.from(sel.options).find(o => o.value === String(values.category));
+      if (opt) opt.selected = true;
+    }
+
+    passengersContainer.appendChild(node);
+    refreshPassengerUI();
+    attachMiniGenderHandlers();
+    attachCategoryChangeHandlers();
+  }
+
+  function removeLastPassenger() {
+    const forms = passengersContainer.querySelectorAll('.passenger-form');
+    if (forms.length <= 1) return;
+    forms[forms.length - 1].remove();
+    refreshPassengerUI();
+  }
+
+  function refreshPassengerUI() {
+    const forms = passengersContainer.querySelectorAll('.passenger-form');
+    forms.forEach((f, idx) => {
+      f.querySelector('.ticket-index').textContent = idx + 1;
+    });
+    ticketsCountLabel.textContent = forms.length + (forms.length > 1 ? ' tiket' : ' tiket');
+    updatePriceUI();
+  }
+
+  function attachMiniGenderHandlers() {
+    document.querySelectorAll('.gender-btn-mini').forEach(btn => btn.replaceWith(btn.cloneNode(true)));
+    document.querySelectorAll('.gender-btn-mini').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const parent = btn.closest('.passenger-form');
+        parent.querySelectorAll('.gender-btn-mini').forEach(b => b.classList.remove('bg-brand-orange', 'text-white'));
+        btn.classList.add('bg-brand-orange', 'text-white');
+        parent.querySelector('.p_gender').value = btn.dataset.gender;
+      });
+    });
+  }
+
+  function attachCategoryChangeHandlers() {
+    document.querySelectorAll('.p_category').forEach(sel => {
+      sel.removeEventListener('change', updatePriceUI);
+      sel.addEventListener('change', updatePriceUI);
+    });
+  }
+
+  // load seats (for ?seats=... support)
+  async function loadSeats() {
+    try {
+      const resp = await fetch("{% url 'matches:match_seats_api' match.id %}");
+      const data = await resp.json();
+      seatsData = data.seats || [];
+      updatePreselectedUI();
+
+      if (selectedSeatIds.length > 0) {
+        // prepare forms to match selected seats
+        passengersContainer.innerHTML = '';
+        selectedSeatIds = selectedSeatIds.map(x => parseInt(x)).filter(Boolean);
+        selectedSeatInput.value = selectedSeatIds.join(',');
+        for (let sid of selectedSeatIds) {
+          const seat = seatsData.find(s => s.id === sid);
+          const catName = seat ? seat.category : '';
+          addPassengerForm({category: catName});
+          // lock select for this passenger
+          const forms = passengersContainer.querySelectorAll('.passenger-form');
+          const thisForm = forms[forms.length - 1];
+          const sel = thisForm.querySelector('.p_category');
+          if (sel) {
+            sel.value = catName;
+            sel.disabled = true;
+            thisForm.querySelector('.passenger-sub').textContent = `Kursi dipilih: ${seat ? seat.label : sid}`;
+          }
+        }
+      }
+    } catch (err) {
+      console.error('failed load seats', err);
+    }
+  }
+
+  function formatRp(n) {
+    if (n == null) return 'Rp0';
+    return 'Rp' + n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  }
+
+  function updatePreselectedUI() {
+    if (selectedSeatIds.length === 0) {
+      preselectedDiv.innerHTML = '<div class="text-sm text-gray-500">Belum ada kursi spesifik yang dipilih. Sistem akan memilih kursi kosong otomatis berdasarkan kategori tiap tiket.</div>';
+      return;
+    }
+    const chosen = seatsData.filter(s => selectedSeatIds.includes(s.id));
+    const html = chosen.map(c => `<div class="inline-block mr-2 mb-1 px-3 py-1 border rounded" style="background:${c.color};color:#fff">${c.label} — ${c.category} — ${formatRp(c.price)}</div>`).join('');
+    preselectedDiv.innerHTML = `<div class="mb-2 text-sm font-medium">Kursi terpilih:</div>${html}`;
+  }
+
+  function getCurrentPassengersData() {
+    const forms = passengersContainer.querySelectorAll('.passenger-form');
+    return Array.from(forms).map(f => {
+      return {
+        name: f.querySelector('.p_name').value.trim(),
+        email: f.querySelector('.p_email').value.trim(),
+        phone: f.querySelector('.p_phone').value.trim(),
+        gender: f.querySelector('.p_gender').value || '',
+        category: f.querySelector('.p_category') ? f.querySelector('.p_category').value : ''
+      };
+    });
+  }
+
+  function validatePassengers(passengers) {
+    if (!passengers || passengers.length === 0) return { ok: false, msg: 'Minimal 1 tiket harus diisi.' };
+    for (const p of passengers) {
+      if (!p.name || p.name.length < 2) return { ok: false, msg: 'Setiap tiket harus memiliki nama penumpang minimal 2 karakter.' };
+      if (!p.category) return { ok: false, msg: 'Setiap tiket harus memilih kategori tempat duduk.' };
+      if (categoriesPrice[p.category] === undefined) return { ok: false, msg: `Kategori tidak dikenal: ${p.category}` };
+    }
+    return { ok: true };
+  }
+
+  function updatePriceUI() {
+    const passengers = getCurrentPassengersData();
+    if (selectedSeatIds.length > 0 && seatsData.length > 0) {
+      const seatMap = {};
+      seatsData.forEach(s => { seatMap[s.id] = s.price; });
+      let sum = 0;
+      for (let sid of selectedSeatIds) {
+        sum += seatMap[sid] || 0;
+      }
+      pricePerTicket.textContent = 'lihat per tiket (kursi terpilih)';
+      totalPrice.textContent = formatRp(sum);
+      return;
+    }
+
+    let sum = 0;
+    const perPrices = passengers.map(p => {
+      const pr = categoriesPrice[p.category] || 0;
+      sum += pr;
+      return pr;
+    });
+    pricePerTicket.textContent = perPrices.length === 1 ? formatRp(perPrices[0]) : perPrices.map(x => formatRp(x)).join(' + ');
+    totalPrice.textContent = formatRp(sum);
+  }
+
+  addTicketBtn.addEventListener('click', () => addPassengerForm());
+  removeLastBtn.addEventListener('click', () => removeLastPassenger());
+
+  document.getElementById('checkout-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    checkoutMsg.textContent = '';
+
+    const passengers = getCurrentPassengersData();
+    const valid = validatePassengers(passengers);
+    if (!valid.ok) {
+      checkoutMsg.textContent = valid.msg;
+      return;
+    }
+
+    const csrfToken = getCookie('csrftoken');
+
+    // If seat_ids present -> api_book
+    if (selectedSeatIds.length > 0) {
+      if (passengers.length !== selectedSeatIds.length) {
+        checkoutMsg.textContent = 'Jumlah penumpang harus sama dengan jumlah kursi yang dipilih.';
+        return;
+      }
+      const body = {
+        match_id: parseInt(matchId),
+        seat_ids: selectedSeatIds,
+        passengers,
+        buyer_name: passengers[0].name,
+        buyer_email: passengers[0].email || ''
+      };
+      try {
+        const res = await fetch("{% url 'matches:api_book' %}", {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+          },
+          body: JSON.stringify(body)
+        });
+        const j = await res.json();
+        if (!res.ok || !j.ok) {
+          checkoutMsg.textContent = j.msg || 'Gagal memesan kursi. Coba lagi.';
+          return;
+        }
+        checkoutMsg.innerHTML = `Berhasil booking #${j.booking_id}.<br/>` +
+          (j.assigned && j.assigned.length ? j.assigned.map(a => `${a.passenger.name} → ${a.seat_label}`).join('<br/>') : `Total: ${formatRp(j.total_price)}`);
+        return;
+      } catch (err) {
+        console.error(err);
+        checkoutMsg.textContent = 'Error saat memesan. Periksa koneksi.';
+      }
+      return;
+    }
+
+    // else: booking by quantity / per-passenger categories
+    const body = {
+      match_id: parseInt(matchId),
+      quantity: passengers.length,
+      passengers,
+      buyer_name: passengers[0].name,
+      buyer_email: passengers[0].email || ''
+    };
+
+    try {
+      const res = await fetch("{% url 'matches:api_book_quantity' %}", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify(body)
+      });
+      const j = await res.json();
+      if (!res.ok || !j.ok) {
+        checkoutMsg.textContent = j.msg || 'Gagal memesan kursi. Coba lagi.';
+        return;
+      }
+      checkoutMsg.innerHTML = `Berhasil booking #${j.booking_id}.<br/>` +
+        (j.assigned && j.assigned.length ? j.assigned.map(a => `${a.passenger.name} → ${a.seat_label}`).join('<br/>') : `Kursi: ${j.seat_labels.join(', ')}. Total: ${formatRp(j.total_price)}`);
+    } catch (err) {
+      console.error(err);
+      checkoutMsg.textContent = 'Error saat memesan. Periksa koneksi.';
+    }
+  });
+
+  (async function init() {
+    addPassengerForm();
+    await loadSeats();
+    updatePriceUI();
+  })();
+</script>
+{% endblock %}

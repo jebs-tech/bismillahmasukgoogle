@@ -18,9 +18,9 @@
         <div class="flex items-center gap-3">
           <div class="text-right">
             <div class="text-sm text-gray-500">From</div>
-            <div class="font-bold text-serve-accent">Rp {{ m.price_from|floatformat:0 }}</div>
+            <div class="font-bold text-brand-orange">Rp {{ m.price_from|floatformat:0 }}</div>
           </div>
-          <a href="{% url 'matches:match_detail' m.id %}" class="px-4 py-2 bg-serve-accent text-white rounded-md">Lihat</a>
+          <a href="{% url 'matches:match_detail' m.id %}" class="px-4 py-2 bg-brand-orange text-brand-orange text-white rounded-md">Lihat</a>
         </div>
       </li>
       {% endfor %}

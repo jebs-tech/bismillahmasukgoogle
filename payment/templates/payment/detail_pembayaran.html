@@ -67,12 +67,23 @@
 
             <div class="mb-6">
                 <label for="metode_pembayaran" class="block text-sm font-medium text-gray-700 mb-2">Pilih Bank / E-Wallet</label>
-                <select id="metode_pembayaran" name="metode_pembayaran" required class="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-brand-light-blue focus:border-brand-light-blue sm:text-sm">
+                <select id="metode_pembayaran" name="metode_pembayaran" required
+                    class="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm
+                        focus:outline-none focus:ring-brand-light-blue focus:border-brand-light-blue sm:text-sm">
                     <option value="" disabled selected>Pilih salah satu...</option>
                     <option value="BRI">BRI - 0123456789 (a/n SERVE.TIX)</option>
                     <option value="BCA">BCA - 9876543210 (a/n SERVE.TIX)</option>
                     <option value="Mandiri">Mandiri - 1122334455 (a/n SERVE.TIX)</option>
+                    <option value="Gopay">GoPay (QR Code)</option>
+                    <option value="QRIS">QRIS (Semua Bank / E-Wallet)</option>
                 </select>
+            </div>
+
+            <div id="qris-display" class="mb-6 hidden text-center">
+                <p class="text-sm text-gray-600 mb-2">Silakan scan QR berikut untuk menyelesaikan pembayaran.</p>
+                <img id="qr-image" src="{% static 'images/qris.png' %}" alt="QR Code Pembayaran"
+                     class="mx-auto w-48 h-48 object-contain border rounded-lg shadow-md">
+                <p class="mt-2 text-gray-500 text-xs">Gunakan aplikasi e-wallet atau mobile banking untuk scan QR ini.</p>
             </div>
 
             <div id="bukti-transfer-container" class="mb-6 hidden">

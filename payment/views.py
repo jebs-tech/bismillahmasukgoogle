@@ -67,27 +67,24 @@ from matches.models import Match, Seat, SeatCategory
 
 @require_POST
 @csrf_exempt 
-@transaction.atomic 
+@transaction.atomic # WAJIB di atas fungsi
 def simpan_pembelian_ajax(request):
     """Endpoint AJAX: Pilih kategori & jumlah, server cari kursi, dan terapkan diskon voucher."""
     
     try:
         data = json.loads(request.body)
-        
-        # --- (TAMBAHAN VOUCHER) ---
-        voucher_code = data.get('kode_voucher', '').strip() # Ambil kode voucher
-        # ---------------------------
+        voucher_code = data.get('kode_voucher', '').strip()
         
         required_fields = ['nama_lengkap', 'email', 'nomor_telepon', 'match_id', 'kategori_id', 'tickets']
-        # Pastikan kita tidak crash jika tiket kosong (sudah dicek di bawah)
-        if not all(field in data for field in required_fields if field != 'kode_voucher'): 
+        # 1. Validasi Input Dasar
+        if not all(field in data for field in required_fields): 
             return JsonResponse({'status': 'error', 'message': 'Data input tidak lengkap.'}, status=400)
             
         jumlah_tiket_diminta = len(data['tickets'])
         if jumlah_tiket_diminta <= 0:
              return JsonResponse({'status': 'error', 'message': 'Jumlah tiket tidak valid.'}, status=400)
 
-        # 3. Ambil Objek Match dan Kategori
+        # 2. Ambil Objek Match dan Kategori
         try:
             match = Match.objects.get(id=data['match_id'])
             kategori = SeatCategory.objects.get(id=data['kategori_id'])
@@ -96,8 +93,8 @@ def simpan_pembelian_ajax(request):
         except SeatCategory.DoesNotExist:
              return JsonResponse({'status': 'error', 'message': 'Kategori kursi tidak ditemukan.'}, status=404)
 
-        # 4. Cari Kursi Tersedia
-        available_seats = Seat.objects.select_for_update(skip_locked=True).filter(
+        # 3. Cari Kursi Tersedia (select_for_update untuk mengunci kursi)
+        available_seats = Seat.objects.select_for_update().filter(
             match=match,
             category=kategori,
             is_booked=False
@@ -107,13 +104,13 @@ def simpan_pembelian_ajax(request):
         if len(available_seats) < jumlah_tiket_diminta:
             return JsonResponse({'status': 'error', 'message': f'Maaf, hanya tersisa {len(available_seats)} tiket untuk kategori {kategori.name}.'}, status=409)
 
-        # 5. Hitung Total Harga DASAR
+        # 4. Hitung Total Harga
         total_harga_dasar = jumlah_tiket_diminta * kategori.price
         total_harga_final = total_harga_dasar
         discount_amount = 0
-        
-        # --- 6. VALIDASI DAN APLIKASI VOUCHER (BARU) ---
         applied_code = ""
+        
+        # 5. VALIDASI DAN APLIKASI VOUCHER
         if voucher_code:
             discount_amount, error_message = validate_and_apply_voucher(
                 voucher_code, 
@@ -128,40 +125,40 @@ def simpan_pembelian_ajax(request):
             if discount_amount > 0:
                 total_harga_final -= discount_amount
                 applied_code = voucher_code
-            # Catatan: Jika diskon 0, kita abaikan kode vouchernya.
-        # -----------------------------------------------------
 
-        # 7. Buat Objek Pembelian (Simpan HARGA FINAL dan KODE VOUCHER)
+        # 6. Buat Objek Pembelian (Simpan HARGA FINAL dan KODE VOUCHER)
         pembelian = Pembelian.objects.create(
             user=request.user if request.user.is_authenticated else None,
             match=match,
             nama_lengkap_pembeli=data['nama_lengkap'],
             email=data['email'],
             nomor_telepon=data['nomor_telepon'],
-            total_price=total_harga_final, # <-- SIMPAN HARGA FINAL SETELAH DISKON
-            kode_voucher=applied_code, # <-- SIMPAN KODE VOUCHER YANG BERHASIL
+            total_price=total_harga_final, # <-- HARGA FINAL
+            kode_voucher=applied_code, # <-- KODE VOUCHER YANG BERHASIL
             status='PENDING'
         )
         
-        # 8. Asosiasikan Kursi dan Tandai is_booked=True (Logika sama)
+        # 7. Asosiasikan Kursi dan Tandai is_booked=True
         pembelian.seats.set(available_seats)
         seat_ids_to_book = [seat.id for seat in available_seats]
         Seat.objects.filter(id__in=seat_ids_to_book).update(is_booked=True)
         
-        # 9. Kirim Response Sukses
+        # 8. Kirim Response Sukses
         return JsonResponse({
             'status': 'success', 
             'message': 'Booking berhasil disimpan. Lanjut ke pembayaran.', 
             'order_id': pembelian.order_id,
             'total_harga': total_harga_final,
-            'discount_amount': discount_amount # Kirim nilai diskon untuk konfirmasi UI (opsional)
+            'discount_amount': discount_amount
         }, status=200)
 
     except json.JSONDecodeError:
         return JsonResponse({'status': 'error', 'message': 'Format data JSON tidak valid.'}, status=400)
     except IntegrityError: 
-         return JsonResponse({'status': 'error', 'message': 'Konflik saat booking kursi, coba lagi.'}, status=409)
+         # IntegrityError bisa terjadi jika ada unique constraint yang dilanggar
+         return JsonResponse({'status': 'error', 'message': 'Kesalahan integritas data. Coba lagi.'}, status=409)
     except Exception as e:
+        # Menangkap error Python lainnya
         print(f"Error saat menyimpan pembelian (auto-assign): {e}") 
         return JsonResponse({'status': 'error', 'message': f'Terjadi kesalahan di server.'}, status=500)
 

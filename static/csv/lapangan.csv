@@ -1,102 +1,20 @@
 nama_lapangan,alamat,kota,kapasitas_maks,harga_suporter,harga_bronze,harga_silver,harga_gold
-GOR Among Rogo,Jl. Taman Siswa No.1, Yogyakarta,8000,75000,150000,250000,500000
-GOR Jatidiri,Jl. Karangrejo, Kota Semarang,9000,75000,150000,250000,450000
-GOR Ken Arok,Jl. Mayjen Sungkono, Kota Malang,5000,50000,100000,200000,350000
-GOR Tri Dharma,Jl. Jend. A. Yani, Gresik,4000,50000,100000,175000,300000
-Istora Senayan,Jl. Pintu Satu Senayan, Jakarta Pusat,7166,100000,250000,500000,1000000
-GOR Pajajaran,Jl. Pajajaran No.37, Kota Bogor,3000,50000,100000,150000,250000
-GOR C-Tra Arena,Jl. Cikutra No.278, Kota Bandung,5000,60000,125000,200000,400000
-GOR Sabilulungan,Jl. Al-Fathu, Soreang, Kabupaten Bandung,8000,60000,120000,200000,350000
-GOR Satria,Jl. Prof. Dr. Suharso, Purwokerto,6000,50000,100000,175000,300000
-GOR Tawangalun,Jl. Tawang Alun, Banyuwangi,2500,40000,80000,125000,200000
-GOR PSCC,Jl. POM IX, Palembang,4000,50000,100000,180000,320000
-GOR UNY,Jl. Colombo No.1, Yogyakarta,5000,60000,125000,200000,350000
-GOR Wujil,Jl. Soekarno-Hatta, Bergas, Kabupaten Semarang,1500,40000,75000,120000,N/A
-GOR Ki Mageti,Jl. Raya Sarangan, Magetan,3000,40000,80000,130000,220000
-GOR Jayabaya,Jl. Semeru, Kota Kediri,3500,50000,100000,160000,280000
-GOR Singalodra,Jl. A. Yani, Indramayu,2000,40000,75000,125000,N/A
-GOR Purna Krida,Jl. Purna Krida, Kerobokan, Bali,1000,50000,100000,N/A,N/A
-GOR Lila Bhuana,Jl. Melati, Denpasar, Bali,1500,50000,100000,150000,N/A
-GOR Voli Indoor Si Jalak Harupat,Kutawaringin, Kabupaten Bandung,2000,60000,120000,200000,350000
-The Queen Volleyball Court,Jl. BKR No.17, Bandung,100,N/A,N/A,N/A,N/A
-Progresif Volleyball Hall,Jl. Soekarno-Hatta No.78, Bandung,500,N/A,N/A,N/A,N/A
-GOR Voli Indoor UPI,Jl. Dr. Setiabudi No.229, Bandung,1500,N/A,N/A,N/A,N/A
-GOR Laga Tangkas,Jl. Laga Tangkas, Cibubur, Jakarta Timur,2000,50000,100000,150000,250000
-GOR Bulungan,Jl. Bulungan No.1, Jakarta Selatan,2500,50000,100000,160000,280000
-GOR Soemantri Brodjonegoro,Jl. H.R. Rasuna Said, Jakarta Selatan,3000,60000,120000,200000,350000
-GOR Otista,Jl. Otto Iskandardinata Raya, Jakarta Timur,1000,N/A,N/A,N/A,N/A
-Hall A Basket Senayan,Jl. Pintu Satu Senayan, Jakarta Pusat,1500,75000,150000,250000,N/A
-Sport Hall Indocement,Citeureup, Bogor,3000,50000,100000,150000,N/A
-GOR Ciracas,Jl. Raya Bogor KM 25-26, Jakarta Timur,1200,N/A,N/A,N/A,N/A
-GOR Tegalega,Jl. Otto Iskandardinata, Bandung,1000,N/A,N/A,N/A,N/A
-GOR Koni Bandung,Jl. Jakarta No.18, Bandung,800,N/A,N/A,N/A,N/A
-GOR Merpati,Jl. Merpati, Denpasar, Bali,500,N/A,N/A,N/A,N/A
-GOR Pancing,Jl. William Iskandar Ps. V, Deli Serdang,2000,40000,80000,130000,200000
-GOR Unimed,Jl. William Iskandar Ps. V, Deli Serdang,1500,N/A,N/A,N/A,N/A
-GOR Futsal Jatinangor,Jl. Raya Jatinangor, Sumedang,1000,N/A,N/A,N/A,N/A
-GOR Bima,Jl. Bypass, Cirebon,1500,40000,75000,N/A,N/A
-GOR Manahan,Jl. Adi Sucipto, Surakarta,2500,50000,100000,150000,N/A
-GOR Sritex Arena,Jl. Kebangkitan Nasional, Surakarta,4000,60000,120000,200000,350000
-GOR Bahurekso,Jl. Bahurekso, Kendal,1000,N/A,N/A,N/A,N/A
-GOR Wergu Wetan,Jl. GOR, Kudus,2000,45000,90000,140000,240000
-GOR Mustika,Jl. Jend. Sudirman, Blora,1000,N/A,N/A,N/A,N/A
-GOR Kebo Anabrang,Jl. Raya Boyolali-Semarang, Boyolali,800,N/A,N/A,N/A,N/A
-GOR Diponegoro,Jl. Diponegoro, Sragen,1200,N/A,N/A,N/A,N/A
-GOR Lembu Peteng,Jl. Lembu Peteng, Tulungagung,2500,40000,80000,125000,N/A
-GOR Sudirman,Jl. Pahlawan, Surabaya,3000,60000,125000,200000,350000
-GOR CLS Kertajaya,Jl. Kertajaya Indah Timur I, Surabaya,2000,50000,100000,175000,N/A
-DBL Arena,Jl. Jend. A. Yani, Surabaya,5000,75000,150000,250000,450000
-GOR Pancasila,Jl. Indragiri, Surabaya,1500,N/A,N/A,N/A,N/A
-GOR Brawijaya,Jl. Hayam Wuruk, Surabaya,1000,N/A,N/A,N/A,N/A
-GOR Unesa,Jl. Lidah Wetan, Surabaya,2000,N/A,N/A,N/A,N/A
-GOR PKPSO,Jl. Jend. Sudirman, Kaliwates, Jember,1500,40000,75000,N/A,N/A
-GOR Tawang Praja,Jl. Gajah Mada, Nganjuk,800,N/A,N/A,N/A,N/A
-GOR Untung Suropati,Jl. Untung Suropati, Pasuruan,1000,N/A,N/A,N/A,N/A
-GOR A. Yani,Jl. A. Yani, Sumenep, Madura,1200,N/A,N/A,N/A,N/A
-GOR Sultan Agung,Jl. Sultan Agung, Bantul,3000,50000,100000,150000,N/A
-GOR Tridadi,Jl. Dr. Radjimin, Sleman,800,N/A,N/A,N/A,N/A
-GOR Gelar Sena,Jl. Raya Klaten-Solo, Klaten,1000,N/A,N/A,N/A,N/A
-GOR Pandanarang,Jl. Pandanaran, Boyolali,1500,40000,80000,120000,N/A
-GOR Indoor Sasana Krida,Jl. Tentara Pelajar, Purworejo,500,N/A,N/A,N/A,N/A
-GOR Jetayu,Jl. Jend. Sudirman, Pekalongan,1000,N/A,N/A,N/A,N/A
-GOR Satria Rembang,Jl. Gajah Mada, Rembang,1200,N/A,N/A,N/A,N/A
-GOR Tennis Indoor Manahan,Jl. Adi Sucipto, Surakarta,1000,N/A,N/A,N/A,N/A
-GOR Segiri,Jl. Kesuma Bangsa, Samarinda,4000,50000,100000,180000,300000
-Gedung Kesenian Balikpapan,Jl. Syarifuddin Yoes, Balikpapan,1500,50000,100000,150000,N/A
-GOR Hasanuddin,Jl. Urip Sumoharjo, Makassar,2500,50000,100000,160000,280000
-GOR Sudiang,Jl. Pajjaiang, Makassar,2000,N/A,N/A,N/A,N/A
-GOR Rudy Resnawan,Jl. Trikora, Banjarbaru,1500,40000,80000,130000,N/A
-GOR Laga Ligo,Jl. Andi Makkasau, Parepare,1000,N/A,N/A,N/A,N/A
-GOR Hi-Qua Wima,Jl. Ngagel, Surabaya,200,N/A,N/A,N/A,N/A
- lapangan voli indoor ITS,Jl. Teknik Kimia, Surabaya,500,N/A,N/A,N/A,N/A
-Voli Indoor UGM,Jl. Kesehatan, Yogyakarta,500,N/A,N/A,N/A,N/A
-Voli Indoor Sabuga,Jl. Tamansari, Bandung,1000,N/A,N/A,N/A,N/A
-GOR Pertamina Simprug,Jl. Teuku Nyak Arief, Jakarta Selatan,800,N/A,N/A,N/A,N/A
-GOR Rawamangun,Jl. Pemuda, Jakarta Timur,1500,N/A,N/A,N/A,N/A
-Gelanggang Remaja Jakarta Utara,Jl. Yos Sudarso, Jakarta Utara,1000,N/A,N/A,N/A,N/A
-Gelanggang Remaja Jakarta Barat,Jl. Kembangan Raya, Jakarta Barat,1000,N/A,N/A,N/A,N/A
-Gelanggang Remaja Jakarta Pusat,Jl. Tanah Abang I, Jakarta Pusat,800,N/A,N/A,N/A,N/A
-Hall Voli Gelora Bung Karno,Jl. Pintu Satu Senayan, Jakarta Pusat,1000,75000,150000,250000,400000
-Voli Indoor PPOP Ragunan,Jl. RM. Harsono, Jakarta Selatan,1200,N/A,N/A,N/A,N/A
-GOR Kertajaya,Jl. Kertajaya, Surabaya,1500,N/A,N/A,N/A,N/A
-GOR Basket Bekasi,Jl. Jend. A. Yani, Bekasi,1000,N/A,N/A,N/A,N/A
-GOR Dimyati,Jl. A. Yani, Tangerang,1500,40000,80000,N/A,N/A
-GOR Maulana Yusuf,Jl. Jend. Sudirman, Serang,1200,N/A,N/A,N/A,N/A
-GOR Kotabaru,Jl. Lingkar Selatan, Jambi,1000,N/A,N/A,N/A,N/A
-GOR Dempo,Jl. A. Yani, Pagar Alam,800,N/A,N/A,N/A,N/A
-GOR Ratu,Jl. Ratu Sianum, Palembang,1000,N/A,N/A,N/A,N/A
-GOR STT Telkom,Jl. Telekomunikasi, Bandung,500,N/A,N/A,N/A,N/A
-GOR Padjadjaran,Jl. Dipati Ukur, Bandung,800,N/A,N/A,N/A,N/A
-V-Hall Volleyball Court,Jl. Terusan Jakarta, Bandung,100,N/A,N/A,N/A,N/A
-Metro Volley Club,Jl. Cipagalo Girang, Bandung,100,N/A,N/A,N/A,N/A
-Elang Volleyball Court,Jl. Elang Raya, Jakarta Selatan,100,N/A,N/A,N/A,N/A
-Permata Volleyball,Jl. Permata, Tangerang,150,N/A,N/A,N/A,N/A
-GOR Saparua,Jl. Saparua No.2, Bandung,2000,N/A,N/A,N/A,N/A
-GOR POPKI,Jl. PPOP, Cibubur, Jakarta Timur,2500,50000,100000,150000,250000
-GOR Citra,Jl. Citra Garden, Jakarta Barat,300,N/A,N/A,N/A,N/A
-GOR Arcamanik,Jl. Pacuan Kuda, Bandung,1000,N/A,N/A,N/A,N/A
-GOR Pajajaran,Jl. Pajajaran, Bandung,2000,50000,100000,175000,300000
-GOR Tambak Sari,Jl. Tambak Sari, Jambi,800,N/A,N/A,N/A,N/A
-GOR Sahabudin,Jl. Dr. Sahabudin, Pangkal Pinang,1000,N/A,N/A,N/A,N/A
-GOR Sumpah Pemuda,Jl. Sumpah Pemuda, Lampung,2000,45000,90000,140000,240000
-
+GOR Among Rogo,"Jl. Taman Siswa No.1, Yogyakarta",Yogyakarta,8000,75000,150000,250000,500000
+GOR Jatidiri,"Jl. Karangrejo, Kota Semarang",Kota Semarang,9000,75000,150000,250000,450000
+GOR Ken Arok,"Jl. Mayjen Sungkono, Kota Malang",Kota Malang,5000,50000,100000,200000,350000
+GOR Tri Dharma,"Jl. Jend. A. Yani, Gresik",Gresik,4000,50000,100000,175000,300000
+Istora Senayan,"Jl. Pintu Satu Senayan, Jakarta Pusat",Jakarta Pusat,7166,100000,250000,500000,1000000
+GOR Pajajaran,"Jl. Pajajaran No.37, Kota Bogor",Kota Bogor,3000,50000,100000,150000,250000
+GOR C-Tra Arena,"Jl. Cikutra No.278, Kota Bandung",Kota Bandung,5000,60000,125000,200000,400000
+GOR Sabilulungan,"Jl. Al-Fathu, Soreang, Kabupaten Bandung",Kabupaten Bandung,8000,60000,120000,200000,350000
+GOR Satria,"Jl. Prof. Dr. Suharso, Purwokerto",Purwokerto,6000,50000,100000,175000,300000
+GOR Tawangalun,"Jl. Tawang Alun, Banyuwangi",Banyuwangi,2500,40000,80000,125000,200000
+GOR PSCC,"Jl. POM IX, Palembang",Palembang,4000,50000,100000,180000,320000
+GOR UNY,"Jl. Colombo No.1, Yogyakarta",Yogyakarta,5000,60000,125000,200000,350000
+GOR Wujil,"Jl. Soekarno-Hatta, Bergas, Kabupaten Semarang",Kabupaten Semarang,1500,40000,75000,120000,150000
+GOR Ki Mageti,"Jl. Raya Sarangan, Magetan",Magetan,3000,40000,80000,130000,220000
+GOR Jayabaya,"Jl. Semeru, Kota Kediri",Kota Kediri,3500,50000,100000,160000,280000
+GOR Singalodra,"Jl. A. Yani, Indramayu",Indramayu,2000,40000,75000,125000,200000
+GOR Purna Krida,"Jl. Purna Krida, Kerobokan, Bali",Bali,1000,50000,100000,125000,175000
+GOR Lila Bhuana,"Jl. Melati, Denpasar, Bali",Bali,1500,50000,100000,150000,250000
+GOR Voli Indoor Si Jalak Harupat,Kutawaringin,Kabupaten Bandung,2000,60000,120000,200000,350000

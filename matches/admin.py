@@ -1,29 +1,39 @@
 from django.contrib import admin
-# Pastikan Team diimpor
-from .models import Venue, Match, SeatCategory, Seat, Team 
+# Hapus Booking dari import
+from .models import Venue, Team, Match, SeatCategory, Seat, MatchSeatCapacity
 
+# Daftarkan model satu per satu
 @admin.register(Venue)
 class VenueAdmin(admin.ModelAdmin):
-    list_display = ('name', 'address', 'capacity') # Tambah capacity
+    list_display = ('name','address')
+    search_fields = ('name',)
+
+@admin.register(Team)
+class TeamAdmin(admin.ModelAdmin):
+    list_display = ('name', 'logo')
+    search_fields = ('name',)
+
 
 @admin.register(Match)
 class MatchAdmin(admin.ModelAdmin):
+    # Field tim sudah disinkronkan di list_display
     list_display = ('title', 'venue', 'start_time', 'price_from', 'team_a', 'team_b') 
-
-    list_filter = ('venue',)
+    list_filter = ('venue', 'start_time')
+    search_fields = ('title',)
+    # Anda mungkin perlu menambahkan fields tim ke fieldsets jika Anda mengedit Match di admin
+    fieldsets = (
+        (None, {'fields': ('title', 'venue', 'start_time', 'price_from', 'description')}),
+        ('Teams', {'fields': ('team_a', 'team_b')}),
+    )
 
 
 @admin.register(SeatCategory)
 class SeatCategoryAdmin(admin.ModelAdmin):
     list_display = ('name', 'price', 'color')
+    search_fields = ('name',)
 
 @admin.register(Seat)
 class SeatAdmin(admin.ModelAdmin):
     list_display = ('match', 'row', 'col', 'category', 'is_booked')
     list_filter = ('match', 'category', 'is_booked')
-
-# --- TAMBAHKAN INI ---
-@admin.register(Team)
-class TeamAdmin(admin.ModelAdmin):
-    list_display = ('name', 'logo')
-# ----------------------
+    search_fields = ('match__title', 'row')
