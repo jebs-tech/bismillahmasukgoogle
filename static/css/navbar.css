@@ -1,0 +1,76 @@
+/* static/css/navbar.css */
+
+.group-parent {
+    width: 100%;
+    height: 164px;
+    position: relative;
+    text-align: center;
+    font-size: 36px;
+    color: #1e2c4f;
+    font-family: 'DM Sans';
+    /* Menambahkan position:fixed agar navbar menempel */
+    position: fixed; 
+    top: 0;
+    z-index: 100; /* Pastikan di atas semua konten Tailwind */
+    background-color: #1e2c4f; /* Warna Navy yang sama dengan #1e2c4f */
+}
+.group-wrapper {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 1774px; /* Hati-hati dengan lebar tetap ini! */
+    height: 164px;
+}
+.group-wrapper8 {
+    position: absolute;
+    top: 51px;
+    left: 1483px; /* Posisi Tombol Masuk */
+    width: 198px;
+    height: 63px;
+}
+.user-parent {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 198px;
+    height: 63px;
+}
+/* ... (lanjutkan semua CSS detail lain untuk .user, .icon, .group-item, .masuk) ... */
+.group-item {
+    position: absolute;
+    top: 3px;
+    left: 0px;
+    border-radius: 60px;
+    background-color: #f6ca50; /* Warna Emas */
+    width: 198px;
+    height: 60px;
+}
+.masuk {
+    position: absolute;
+    top: 7px;
+    left: 49px;
+    letter-spacing: -0.02em;
+    line-height: 140%;
+    color: #1e2c4f; /* Warna Navy untuk teks */
+    z-index: 2; /* Pastikan teks di atas latar belakang */
+}
+.group-wrapper9 {
+    position: absolute;
+    top: 57px;
+    left: 84px; /* Posisi Logo */
+    width: 198px;
+    height: 51px;
+    text-align: left;
+    color: #fdf4d9;
+    font-family: Roboto;
+}
+.servetix {
+    line-height: 120%;
+    /* ... (lanjutkan detail lain) ... */
+}
+.span {
+    color: #fff;
+}
+.tix {
+    color: #f6ca50;
+}
