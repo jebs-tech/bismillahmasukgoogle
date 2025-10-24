@@ -20,7 +20,7 @@ from django.views.generic import RedirectView # Import RedirectView
 from django.conf import settings
 from django.conf.urls.static import static
 
-urlpatterns = [d
+urlpatterns = [
 path('accounts/', include(([
         # Login dan Logout harus memiliki nama 'login' dan 'logout'
         path('login/', RedirectView.as_view(url='/login-soon/'), name='login'),
