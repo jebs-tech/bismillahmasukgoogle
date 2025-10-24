@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'payment',
 ]
 
 MIDDLEWARE = [
@@ -156,3 +157,12 @@ EMAIL_HOST_PASSWORD = os.environ.get('SENDGRID_API_KEY')
 DEFAULT_FROM_EMAIL = os.environ.get('EMAIL_USER')
 
 LOGIN_URL = 'user:login'
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' # Menampilkan email di konsol
+DEFAULT_FROM_EMAIL = 'Servetix <no-reply@servetix.com>'
+# Jika menggunakan SendGrid, ganti:
+# EMAIL_BACKEND = 'sendgrid_backend.SendgridBackend'
+# SENDGRID_API_KEY = 'YOUR_API_KEY'
