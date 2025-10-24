@@ -3,7 +3,8 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.views.decorators.csrf import csrf_exempt
 from django.db import transaction
-from .models import Match, Seat, Booking
+from .models import Match, Seat
+from payment.models import Pembelian
 
 def index(request):
     """
@@ -64,7 +65,7 @@ def api_book(request):
             return JsonResponse({'ok': False, 'msg': 'Beberapa kursi sudah terisi'}, status=400)
 
         total = sum(s.category.price for s in seats_qs)
-        booking = Booking.objects.create(match_id=match_id, buyer_name=buyer_name, buyer_email=buyer_email, total_price=total)
+        booking = Pembelian.objects.create(match_id=match_id, buyer_name=buyer_name, buyer_email=buyer_email, total_price=total)
         booking.seats.add(*seats_qs)
         seats_qs.update(is_booked=True)
 

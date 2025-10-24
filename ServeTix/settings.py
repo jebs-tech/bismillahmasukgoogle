@@ -44,7 +44,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.humanize',
     'payment',
+    'matches',
+    'voucher',
+    
 ]
 
 MIDDLEWARE = [
@@ -159,7 +163,7 @@ DEFAULT_FROM_EMAIL = os.environ.get('EMAIL_USER')
 LOGIN_URL = 'user:login'
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_ROOT = BASE_DIR / 'media'
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' # Menampilkan email di konsol
 DEFAULT_FROM_EMAIL = 'Servetix <no-reply@servetix.com>'

@@ -15,4 +15,5 @@ urlpatterns = [
     
     # 4. Endpoint AJAX untuk proses pembayaran, upload bukti, dan konfirmasi
     path('api/proses-bayar/<str:order_id>/', views.proses_bayar_ajax, name='proses_bayar_ajax'),
+    path('api/check-voucher/', views.check_voucher_ajax, name='check_voucher_ajax'),
 ]

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-md mx-auto py-10 px-4 sm:px-6 lg:px-8">
+    <h1 class="text-3xl font-bold text-red-600 mb-4">Konfirmasi Hapus</h1>
+
+    <div class="bg-white shadow p-6 sm:rounded-lg border-l-4 border-red-500">
+        <p class="mb-6 text-gray-700">
+            Anda yakin ingin menghapus voucher <strong>{{ voucher.code }}</strong>?
+            Tindakan ini tidak dapat diurungkan dan akan menghapus semua catatan penggunaannya.
+        </p>
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="flex justify-end space-x-3">
+                <a href="{% url 'voucher:dashboard' %}" class="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50">
+                    Batal
+                </a>
+                <button type="submit" class="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700">
+                    Ya, Hapus Permanen
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SERVE.TIX</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Konfigurasi warna kustom Tailwind agar sesuai dengan gambar
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'brand-dark-blue': '#1a2a4b',
+                        'brand-gold': '#FFC107',
+                        'brand-orange': '#FFA043',
+                        'brand-light-blue': '#4A69BD',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'DM Sans', sans-serif;
+        }
+        .logo-text {
+            font-family: 'Roboto', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-t from-[#FADF95] to-[#FFFFFF] min-h-screen flex flex-col">
+
+    <nav class="bg-brand-dark-blue shadow-lg">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="flex justify-between items-center h-16">
+              
+            <div class="flex items-center">
+                  <a href="/" class="text-2xl sm:text-3xl font-bold logo-text leading-tight tracking-tight>
+                    <span class="text-[#fdf4d9]">SERVE</span><span class="text-white">.</span><span class="text-[#f6ca50]">TIX</span>
+                  </a>
+              </div>
+              
+              <div class="flex items-center space-x-6">
+    
+                <div class="relative">
+                    
+                    <a href="{% url 'user:profile' %}?tab=active_tickets" 
+                       id="ticket-modal-trigger" 
+                       onmouseover="openTicketDropdown()"
+                       onmouseout="closeTicketDropdown()"
+                       class="text-white hover:text-gray-300 transition duration-150 ease-in-out focus:outline-none p-1 block">
+                        <span class="sr-only">Tiket Aktif Saya</span>
+                        <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c.61 0 1.121-.448 1.121-1.002L18.602 7.5H5.482L5.09 5.626A1.12 1.12 0 0 0 4 4.5H2.25M16.5 20.25a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm-9 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" />
+                        </svg>
+                    </a>
+            
+                    <div id="ticket-dropdown-modal" 
+                         onmouseover="clearTimeout(closeTimer)" onmouseout="closeTicketDropdown()"
+                         class="absolute right-8 mt-10 w-80 sm:w-96 bg-white rounded-md shadow-2xl border border-gray-200 z-50 hidden origin-top-right transition-all duration-200 ease-out transform opacity-0 scale-95"> 
+                           <div id="ticket-dropdown-content" class="max-h-[50vh] overflow-y-auto"> 
+                               </div>
+                    </div>
+                </div>
+                  
+                    <a href="{% url 'user:profile' %}" class="text-white hover:text-gray-300 transition duration-150 ease-in-out">
+                      <span class="sr-only">Profil Pengguna</span>
+                      <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A1.875 1.875 0 0 1 18 22.5H6a1.875 1.875 0 0 1-1.499-2.382Z" />
+                      </svg>
+                    </a>
+                  
+                </div>
+              
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-grow">
+        {% block content %}
+        {% endblock %}
+    </main>
+    <div id="modal-backdrop"
+            class="fixed inset-0 bg-black bg-opacity-25 hidden z-40">
+        </div>
+
+        <div id="modal-container"
+            class="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
+            <div id="modal-content"
+                class="bg-white rounded-lg shadow-2xl max-h-full overflow-y-auto transform scale-95 opacity-0 transition-all duration-300 pointer-events-auto">
+        </div>
+</div>
+
+<script>
+    // --- VARIABEL DAN KONSTANTA ---
+    const ticketDropdown = document.getElementById('ticket-dropdown-modal');
+    const backdrop = document.getElementById('modal-backdrop');
+    const ticketTrigger = document.getElementById('ticket-modal-trigger');
+    const dropdownContent = document.getElementById('ticket-dropdown-content');
+
+    // Variabel Timer untuk Hover
+    let openTimer;
+    let closeTimer;
+    const HOVER_DELAY = 400; // Waktu Tahan (Hold Time)
+
+    // --- FUNGSI MODAL TENGAH (QR CODE) ---
+    function closeModal() {
+        const modalContent = document.getElementById('modal-content');
+        modalContent.classList.remove('scale-100', 'opacity-100');
+        modalContent.classList.add('scale-95', 'opacity-0');
+        backdrop.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+    }
+    
+    // --- FUNGSI DROPDOWN (HOVER PREVIEW) ---
+    function openTicketDropdown() {
+        clearTimeout(closeTimer);
+        
+        // Panggil HTMX jika konten belum dimuat
+        if (!dropdownContent.innerHTML.trim() || dropdownContent.innerHTML.includes('Loading')) {
+            htmx.ajax('GET', `{% url 'user:get_active_tickets_modal' %}`, { target: '#ticket-dropdown-content', swap: 'innerHTML' });
+        }
+        
+        // Tampilkan Dropdown
+        ticketDropdown.classList.remove('hidden', 'opacity-0', 'scale-95');
+        ticketDropdown.classList.add('opacity-100', 'scale-100');
+    }
+
+    function closeTicketDropdown() {
+        clearTimeout(openTimer);
+        
+        closeTimer = setTimeout(() => {
+            ticketDropdown.classList.remove('opacity-100', 'scale-100');
+            ticketDropdown.classList.add('opacity-0', 'scale-95');
+            
+            setTimeout(() => {
+                ticketDropdown.classList.add('hidden');
+                // Backdrop TIDAK disembunyikan di sini agar modal tengah tetap bisa pakai
+            }, HOVER_DELAY); 
+        }, HOVER_DELAY); 
+    }
+
+    // --- LISTENER GLOBAL ---
+
+    // 1. HTMX Listener Global (untuk Modal Tengah/QR Code)
+    document.body.addEventListener('htmx:afterSwap', (evt) => {
+        // Logika untuk Modal Tengah (QR Code)
+        if (evt.target.id === 'modal-content' && evt.detail.elt.innerHTML.trim() !== '') {
+            // Tampilkan backdrop untuk modal tengah
+            backdrop.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+            setTimeout(() => {
+                 document.getElementById('modal-content').classList.remove('scale-95', 'opacity-0');
+                 document.getElementById('modal-content').classList.add('scale-100', 'opacity-100');
+            }, 50);
+        } else if (evt.target.id === 'modal-content' && evt.detail.elt.innerHTML.trim() === '') {
+             // Jika modal tengah dikosongkan (ditutup)
+            closeModal();
+        }
+        
+        // Logika untuk Dropdown (agar tetap terbuka setelah konten dimuat HTMX)
+        if (evt.target.id === 'ticket-dropdown-content') {
+             // Pastikan modal terbuka tanpa flicker
+             openTicketDropdown();
+        }
+    });
+
+    // 2. Tutup Modal Tengah saat backdrop diklik
+    backdrop.addEventListener('click', closeModal);
+    
+    // 3. Listener untuk tombol close dari htmx (opsional)
+    document.body.addEventListener('htmx:beforeSwap', (evt) => {
+        if(evt.target.id === 'modal-content' && evt.detail.xhr.status === 204) {
+             closeModal();
+             evt.detail.shouldSwap = false; 
+        }
+    });
+
+    // 4. Tutup Dropdown saat tombol Lihat QR diklik (memicu modal tengah)
+    document.body.addEventListener('click', function(event) {
+        const clickedElement = event.target.closest('button[hx-target="#modal-content"]');
+
+        if (clickedElement) {
+            closeTicketDropdown();
+        }
+    });
+
+</script>
+
+    <script src="https://unpkg.com/htmx.org@1.9.12" integrity="sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2" crossorigin="anonymous"></script>
+
+    <style>
+      .htmx-indicator {
+          display: none;
+          opacity: 0;
+          transition: opacity 200ms ease-in;
+      }
+      .htmx-request .htmx-indicator {
+          display: inline;
+          opacity: 1;
+      }
+      .htmx-request.htmx-indicator {
+          display: inline;
+          opacity: 1;
+      }
+  </style>
+
+<footer class="bg-blue-950 text-white py-6 sm:py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="mb-4">
+            <h2 class="text-xl sm:text-2xl font-bold">
+              <span class="text-white">SERVE.</span><span class="text-yellow-300">TIX</span>
+            </h2>
+        </div>
+        
+        <div class="text-sm sm:text-base text-gray-300">
+            <p>© 2025 SERVETIX. All rights reserved.</p>
+        </div>
+    </div>
+  </footer>
+  
+</body>
+
+</html>

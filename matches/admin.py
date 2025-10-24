@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Venue, Match, SeatCategory, Seat, Booking
+from .models import Venue, Match, SeatCategory, Seat
 
 @admin.register(Venue)
 class VenueAdmin(admin.ModelAdmin):
@@ -18,9 +18,3 @@ class SeatCategoryAdmin(admin.ModelAdmin):
 class SeatAdmin(admin.ModelAdmin):
     list_display = ('match','row','col','category','is_booked')
     list_filter = ('match','category','is_booked')
-
-@admin.register(Booking)
-class BookingAdmin(admin.ModelAdmin):
-    list_display = ('id','match','buyer_name','total_price','paid','created_at')
-    list_filter = ('paid','match')
-    date_hierarchy = 'created_at'

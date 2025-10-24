@@ -1,46 +1,23 @@
+# Di dalam payment/models.py
+
 from django.db import models
 from django.utils import timezone
+from django.conf import settings # Import settings
 import random
 import string
 
-# Model Venue (Digunakan untuk harga)
-class Venue(models.Model):
-    # Kategori Harga berdasarkan kolom yang Anda berikan
-    NAMA_KATEGORI = (
-        ('SUPORTER', 'Suporter'),
-        ('BRONZE', 'Bronze'),
-        ('SILVER', 'Silver'),
-        ('GOLD', 'Gold'),
-    )
+# Import model yang kita butuhkan dari 'matches'
+from matches.models import Match, Seat
 
-    nama_lapangan = models.CharField(max_length=100, unique=True)
-    alamat = models.CharField(max_length=255)
-    kapasitas_maks = models.IntegerField(default=0) # Ditambahkan default=0 untuk mengatasi masalah migrasi
-    
-    # Harga dalam Rupiah (null=True/blank=True untuk mengakomodasi N/A di data Anda)
-    harga_suporter = models.BigIntegerField(null=True, blank=True)
-    harga_bronze = models.BigIntegerField(null=True, blank=True)
-    harga_silver = models.BigIntegerField(null=True, blank=True)
-    harga_gold = models.BigIntegerField(null=True, blank=True)
-    
-    def __str__(self):
-        return self.nama_lapangan
-    
-    def get_price_by_category(self, category_name):
-        """Mendapatkan harga berdasarkan nama kategori (contoh: 'silver')"""
-        price_field = f'harga_{category_name.lower()}'
-        # Mengembalikan nilai attribute atau 0 jika None/tidak ada
-        return getattr(self, price_field, 0) or 0
-        
+# MODEL VENUE DIHAPUS DARI SINI
 
-# Model Pembelian/Transaksi
+# Model Pembelian/Transaksi (menggantikan user.Purchase dan matches.Booking)
 class Pembelian(models.Model):
     STATUS_CHOICES = (
         ('PENDING', 'Menunggu Pembayaran'),
         ('CONFIRMED', 'Terbayar'),
         ('CANCELLED', 'Dibatalkan'),
     )
-    
     METODE_CHOICES = (
         ('BRI', 'BRI'),
         ('BCA', 'BCA'),
@@ -49,26 +26,27 @@ class Pembelian(models.Model):
         ('QRIS', 'QRIS'),
     )
 
-    # Order ID yang unik: AII0903 (Asumsi format: A + Random 6 digit)
+    # --- INFORMASI DARI matches.Booking ---
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='pembelian_history')
+    match = models.ForeignKey(Match, on_delete=models.CASCADE, related_name='pembelian_set', null=True)
+    seats = models.ManyToManyField(Seat, related_name='pembelian_set')
+    total_price = models.PositiveIntegerField(default=0)
+    
+    # --- INFORMASI DARI payment.Pembelian ---
     order_id = models.CharField(max_length=10, unique=True, editable=False) 
-    
-    # Data Pembeli (Kontak)
-    nama_lengkap_pembeli = models.CharField(max_length=100)
-    email = models.EmailField()
-    nomor_telepon = models.CharField(max_length=20)
-    
-    # Data Transaksi
-    total_harga = models.BigIntegerField(default=0)
+    nama_lengkap_pembeli = models.CharField(max_length=100) # Bisa diambil dari user.profile
+    email = models.EmailField() # Bisa diambil dari user.email
+    nomor_telepon = models.CharField(max_length=20) # Bisa diambil dari user.profile
     metode_pembayaran = models.CharField(max_length=10, choices=METODE_CHOICES, null=True, blank=True)
     bukti_transfer = models.ImageField(upload_to='bukti_transfer/', null=True, blank=True)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDING')
     kode_voucher = models.CharField(max_length=50, blank=True)
-    
     tanggal_pembelian = models.DateTimeField(default=timezone.now)
+        
+
 
     def save(self, *args, **kwargs):
         if not self.order_id:
-            # Generate Order ID unik (A + 6 digit random)
             while True:
                 random_digits = ''.join(random.choices(string.digits, k=6))
                 new_order_id = f"AII{random_digits}"
@@ -79,31 +57,3 @@ class Pembelian(models.Model):
 
     def __str__(self):
         return f"Pembelian {self.order_id} - {self.status}"
-
-
-# Model Tiket
-class Tiket(models.Model):
-    GENDER_CHOICES = (
-        ('L', 'Laki-laki'),
-        ('P', 'Perempuan'),
-    )
-    
-    KATEGORI_CHOICES = (
-        ('SUPORTER', 'Suporter'),
-        ('BRONZE', 'Bronze'),
-        ('SILVER', 'Silver'),
-        ('GOLD', 'Gold'),
-    )
-
-    pembelian = models.ForeignKey(Pembelian, on_delete=models.CASCADE, related_name='tikets')
-    # venue_pertandingan = models.ForeignKey(Venue, on_delete=models.CASCADE) # Asumsi dihubungkan melalui model Pertandingan
-    nama_pemegang = models.CharField(max_length=100)
-    jenis_kelamin = models.CharField(max_length=1, choices=GENDER_CHOICES)
-    kategori_kursi = models.CharField(max_length=10, choices=KATEGORI_CHOICES)
-    
-    # Data E-Ticket
-    qr_code_data = models.CharField(max_length=255, unique=True, editable=False)
-    file_qr_code = models.ImageField(upload_to='qrcodes/', null=True, blank=True)
-    
-    def __str__(self):
-        return f"Tiket {self.id} - {self.nama_pemegang} ({self.kategori_kursi})"

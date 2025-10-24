@@ -12,14 +12,21 @@ urlpatterns = [
     path('login/', views.login_user, name='login'),
     path('logout/', views.logout_user, name='logout'),
     
-    # URL untuk Profil Pengguna
+    # URL Dashboard
     path('profile/', views.user_profile_view, name='profile'),
+
+    # URL Parsial HTMX
     path('profile/get-tickets/', views.get_active_tickets, name='get_active_tickets'),
+    path('profile/get-tickets-modal/', views.get_active_tickets_modal, name='get_active_tickets_modal'),
     path('profile/get-history/', views.get_purchase_history, name='get_purchase_history'),
-    path('profile/purchase-detail/<int:event_id>/', views.purchase_detail, name='purchase_detail'),
-    path('profile/ticket-detail/<int:ticket_id>/', views.ticket_detail, name='ticket_detail'),
     path('profile/get-teams/', views.get_preferred_teams, name='get_preferred_teams'),
     path('profile/edit/', views.edit_profile, name='edit_profile'),
+    
+    # URL Detail (ID sekarang merujuk ke Match dan Seat)
+    path('profile/purchase-detail/<int:event_id>/', views.purchase_detail, name='purchase_detail'),
+    path('profile/ticket-detail/<int:ticket_id>/', views.ticket_detail, name='ticket_detail'),
+
+    # URL Hapus Akun
     path('profile/get-delete-form/', views.get_delete_form, name='get_delete_form'),
     path('profile/delete-confirm/', views.delete_account_confirm, name='delete_account_confirm'),
     

@@ -15,29 +15,29 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-<<<<<<< HEAD
 from django.urls import path, include, reverse_lazy # Import reverse_lazy
 from django.views.generic import RedirectView # Import RedirectView
 from django.conf import settings
 from django.conf.urls.static import static
-=======
 from django.urls import path, include
->>>>>>> 9907a36664ce69e8cb1bf4ab56a24ded99668587
+
+# Di ServeTix/urls.py
+
+# Di ServeTix/urls.py
 
 urlpatterns = [
-path('accounts/', include(([
-        # Login dan Logout harus memiliki nama 'login' dan 'logout'
-        path('login/', RedirectView.as_view(url='/login-soon/'), name='login'),
-        path('profile/', RedirectView.as_view(url='/profile-soon/'), name='profile'),
-        path('logout/', RedirectView.as_view(url='/logout-soon/'), name='logout'),
-    ], 'user'), namespace='account')), # Menggunakan namespace 'account'
-    path('', RedirectView.as_view(url=reverse_lazy('payment:detail_pembeli')), name='root_redirect'),
     path('admin/', admin.site.urls),
-<<<<<<< HEAD
+    
+    # Semua URL 'payment/' akan ditangani oleh aplikasi payment
     path('payment/', include('payment.urls', namespace='payment')),
-=======
-    path('', include('matches.urls')),
->>>>>>> 9907a36664ce69e8cb1bf4ab56a24ded99668587
+    
+    # Semua URL 'profile/', 'login/', dll. akan ditangani oleh aplikasi user
+    path('', include('user.urls')),
+    
+    # Halaman utama (root '/') akan ditangani oleh aplikasi matches
+    path('', include('matches.urls')), 
+    
+    path('vouchers/', include('voucher.urls', namespace='voucher')),
 ]
 
 if settings.DEBUG:

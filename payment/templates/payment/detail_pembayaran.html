@@ -1,11 +1,15 @@
 {% extends "base.html" %} 
 {% load static %}
+{% load humanize %}
 
 {% block content %}
 <div class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
-    <h2 class="text-3xl font-bold text-brand-dark-blue mb-6 border-b-2 border-brand-dark-blue pb-2">Detail Pembayaran</h2>
+
+    <h2 class="text-3xl font-bold text-brand-dark-blue mb-6 border-b-2 border-gray-200 pb-2">Detail Pembayaran</h2>
 
     <div class="bg-white p-6 rounded-lg shadow-xl border-t-4 border-brand-orange">
+
+        <input type="hidden" id="harga-dasar-mentah" value="{{ total_price_mentah|default:0 }}">
         
         <div class="flex justify-between items-center mb-6">
             <span class="text-lg text-gray-400">1. Detail Pembeli</span>
@@ -21,13 +25,36 @@
         
         <div class="mb-6">
             <h3 class="text-xl font-semibold text-gray-700 mb-4">Total Pembayaran</h3>
-            <div class="flex justify-between items-end p-3 bg-brand-light-blue rounded-md">
+            <div id="total-pembayaran-display" class="flex justify-between items-end p-3 bg-brand-light-blue rounded-md">
                 <p class="text-white text-base">Total yang Harus Dibayar:</p>
-                <p class="text-white text-3xl font-extrabold">{{ total_harga_formatted }}</p>
+                <input type="hidden" id="harga-final-db" value="{{ total_price_mentah|default:0 }}"> 
+
+                <p class="text-white text-3xl font-extrabold" id="total-akhir-display">
+                    Rp {{ total_price_mentah|default:0 }}
+                </p>
             </div>
             <p class="text-sm text-red-500 mt-2">Mohon lakukan transfer sesuai total harga di atas sebelum batas waktu yang ditentukan.</p>
         </div>
 
+        <div class="mb-6">
+            <label for="voucher-input" class="block text-sm font-medium text-gray-700">Kode Voucher (Opsional)</label>
+            <div class="mt-1 flex rounded-md shadow-sm">
+                <input type="text" id="voucher-input" class="focus:ring-brand-light-blue focus:border-brand-light-blue flex-1 block w-full rounded-none rounded-l-md sm:text-sm border-gray-300" placeholder="Masukkan Kode Voucher jika ada">
+                <button type="button" id="btn-check-voucher" class="inline-flex items-center px-4 py-2 border border-l-0 border-brand-light-blue bg-brand-light-blue text-sm font-medium rounded-r-md text-white hover:bg-brand-dark-blue transition-colors">
+                    Cek
+                </button>
+            </div>
+            <p id="voucher-message" class="mt-2 text-sm hidden"></p>
+        </div>
+        
+        <div id="diskon-display" class="my-3 p-3 bg-green-50 border border-green-200 rounded-md 
+                {% if not pembelian.kode_voucher or diskon_amount == 0 %}hidden{% endif %}">
+                <p class="text-sm font-semibold text-green-700 flex justify-between">
+                    <span>Diskon Voucher (<span id="voucher-code-applied">{{ pembelian.kode_voucher|default:"" }}</span>)</span>
+                    <span class="text-green-600" id="diskon-amount-display">- Rp {{ diskon_amount|default:0|intcomma }}</span>
+                </p>
+            </div>  
+        
         <hr class="my-6">
 
         <h3 class="text-xl font-semibold text-gray-700 mb-4">Pilih Metode Pembayaran</h3>
@@ -36,6 +63,7 @@
             {% csrf_token %}
             
             <input type="hidden" name="order_id" value="{{ pembelian.order_id }}">
+            <input type="hidden" name="voucher_code_applied" id="voucher-code-applied-input" value="{{ pembelian.kode_voucher|default:"" }}">
 
             <div class="mb-6">
                 <label for="metode_pembayaran" class="block text-sm font-medium text-gray-700 mb-2">Pilih Bank / E-Wallet</label>
@@ -44,106 +72,273 @@
                     <option value="BRI">BRI - 0123456789 (a/n SERVE.TIX)</option>
                     <option value="BCA">BCA - 9876543210 (a/n SERVE.TIX)</option>
                     <option value="Mandiri">Mandiri - 1122334455 (a/n SERVE.TIX)</option>
-                    <option value="Gopay">Gopay / QRIS (Lihat QR Code di bawah)</option>
-                    <option value="QRIS">QRIS (Lihat QR Code di bawah)</option>
                 </select>
             </div>
 
-            <div id="qris-display" class="mb-6 hidden">
-                <p class="text-center font-bold text-gray-700 mb-3">Scan QR Code Berikut:</p>
-                <div class="flex justify-center border p-4 rounded-md">
-                    <img src="{% static 'payment/images/qris_placeholder.png' %}" alt="QRIS Code" class="w-48 h-48 object-contain">
-                </div>
-            </div>
-
-            <div class="mb-6">
+            <div id="bukti-transfer-container" class="mb-6 hidden">
                 <label for="bukti_transfer" class="block text-sm font-medium text-gray-700 mb-2">Upload Bukti Transfer (Max 2MB)</label>
-                <input type="file" id="bukti_transfer" name="bukti_transfer" accept="image/*" required class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-brand-light-blue file:text-white hover:file:bg-brand-dark-blue">
+                <input type="file" id="bukti_transfer" name="bukti_transfer" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-brand-light-blue file:text-white hover:file:bg-brand-dark-blue">
             </div>
 
-            <button type="submit" id="btn-konfirmasi-bayar" class="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-brand-orange hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-orange font-bold">
-                Konfirmasi Pembayaran
+            <button type="submit" id="btn-konfirmasi-bayar" class="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-brand-orange hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-orange font-bold" disabled>
+                Pilih Metode Pembayaran
             </button>
         </form>
 
     </div>
+</div>
 
-    <footer class="mt-8">
-        <div class="bg-brand-dark-blue p-4 rounded-t-lg">
-            <p class="text-center text-gray-400 text-sm">© 2025 SERVE.TIX</p>
+<div id="modal-eticket" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-5 mx-auto p-5 border w-96 max-w-lg shadow-lg rounded-md bg-white">
+        <h3 class="text-xl font-bold text-gray-900 mb-4 border-b pb-2">E-Ticket Anda Siap!</h3>
+        <p class="text-sm text-gray-600 mb-4">Tiket ini telah diproses dan akan dikirim ke email **{{ pembelian.email }}**.</p>
+        
+        <div id="container-etickets" class="space-y-6">
+            {% for seat in pembelian.seats.all %} <div class="p-3 border rounded-lg bg-white shadow-md">
+                <div class="flex items-center space-x-3 mb-3 p-2 bg-brand-gold bg-opacity-30 rounded-md">
+                    <span class="text-3xl text-brand-dark-blue">🎟️</span> 
+                    <div>
+                        <p class="font-bold text-brand-dark-blue">{{ pembelian.match.title }}</p>
+                        <p class="text-xs text-gray-700">{{ pembelian.match.venue.name }} | {{ pembelian.match.start_time|date:"j F H:i" }}</p>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center mt-3">
+                    <div class="text-left">
+                        <p class="text-sm font-semibold text-gray-800">Order ID: <span class="font-mono text-brand-orange">{{ pembelian.order_id }}</span></p>
+                        <p class="text-sm font-semibold text-gray-800">Kursi: {{ seat.row }}{{ seat.col }}</p>
+                        <p class="text-sm text-gray-600">Kategori: {{ seat.category.name }}</p>
+                    </div>
+                    
+                </div>
+            </div>
+            {% endfor %}
         </div>
-    </footer>
+
+        <div class="items-center px-4 py-3 border-t mt-4 flex justify-between">
+            <button id="btn-unduh-tiket" class="px-4 py-2 bg-gray-200 text-gray-700 text-base font-medium rounded-md hover:bg-gray-300">
+                <span class="flex items-center"><svg class="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>Unduh</span>
+            </button>
+            <button id="btn-tutup-eticket-modal" class="px-4 py-2 bg-brand-light-blue text-white text-base font-medium rounded-md shadow-sm hover:bg-brand-dark-blue">
+                Tutup
+            </button>
+        </div>
+    </div>
 </div>
 
 <script>
     const formPembayaran = document.getElementById('form-pembayaran');
     const selectMetode = document.getElementById('metode_pembayaran');
     const qrisDisplay = document.getElementById('qris-display');
+    const inputBuktiTransfer = document.getElementById('bukti_transfer');
+    const transferContainer = document.getElementById('bukti-transfer-container');
+    const btnKonfirmasiBayar = document.getElementById('btn-konfirmasi-bayar');
+    const modalEticket = document.getElementById('modal-eticket'); 
+    const btnCheckVoucher = document.getElementById('btn-check-voucher');
+    const voucherInput = document.getElementById('voucher-input');
+    const voucherMessage = document.getElementById('voucher-message');
+    const diskonDisplay = document.getElementById('diskon-display');
+    const totalAkhirDisplay = document.getElementById('total-akhir-display');
+    const voucherCodeAppliedInput = document.getElementById('voucher-code-applied-input');
+    const totalPembayaranDisplay = document.getElementById('total-pembayaran-display');
+
     const orderId = "{{ pembelian.order_id|escapejs }}";
     const CSRF_TOKEN = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
-    // Tampilkan/Sembunyikan QRIS berdasarkan pilihan
+    // ======================
+    // === SETUP HARGA DASAR
+    // ======================
+    const totalHargaFinalDBInput = document.getElementById('harga-final-db');
+    let rawValue = totalHargaFinalDBInput.value;
+    let cleanedValue = rawValue.replace(/[^\d]/g, ''); // hapus semua selain angka
+    let HARGA_DASAR_GLOBAL = parseInt(cleanedValue) || 0; 
+    let HARGA_FINAL_GLOBAL = HARGA_DASAR_GLOBAL;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        updateFinalPrice(HARGA_DASAR_GLOBAL);
+    });
+
+    function formatRupiah(number) {
+        return new Intl.NumberFormat('id-ID', { 
+            style: 'currency', 
+            currency: 'IDR', 
+            minimumFractionDigits: 0 
+        }).format(number);
+    }
+
+    function updateFinalPrice(finalPrice) {
+        const validPrice = parseInt(finalPrice) || 0;
+        totalAkhirDisplay.textContent = formatRupiah(validPrice);
+        HARGA_FINAL_GLOBAL = validPrice;
+    }
+
+    // ======================
+    // === CEK VOUCHER AJAX
+    // ======================
+    btnCheckVoucher.addEventListener('click', async () => {
+        const code = voucherInput.value.trim();
+        if (!code) {
+            voucherMessage.textContent = 'Masukkan kode voucher.';
+            voucherMessage.classList.add('text-red-500');
+            voucherMessage.classList.remove('hidden');
+            return;
+        }
+
+        // Reset UI diskon sebelum cek
+        voucherMessage.classList.add('hidden');
+        diskonDisplay.classList.add('hidden');
+        voucherCodeAppliedInput.value = ''; 
+        updateFinalPrice(HARGA_DASAR_GLOBAL); 
+        
+        btnCheckVoucher.disabled = true;
+
+        try {
+            // kirim total harga mentah juga!
+            const response = await fetch("{% url 'payment:check_voucher_ajax' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': CSRF_TOKEN
+                },
+                body: JSON.stringify({ 
+                    code: code, 
+                    total: HARGA_DASAR_GLOBAL, // ⬅️ kirim total harga mentah
+                    order_id: orderId 
+                })
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.status === 'success') {
+                const discountAmount = parseInt(result.discount_amount) || 0;
+                const finalPrice = parseInt(result.new_total) || HARGA_DASAR_GLOBAL;
+
+                document.getElementById('voucher-code-applied').textContent = result.code;
+                document.getElementById('diskon-amount-display').textContent = '- ' + formatRupiah(discountAmount);
+                diskonDisplay.classList.remove('hidden');
+                
+                updateFinalPrice(finalPrice);
+
+                voucherCodeAppliedInput.value = result.code;
+
+                voucherMessage.textContent = result.message || 'Voucher berhasil diterapkan!';
+                voucherMessage.classList.remove('text-red-500');
+                voucherMessage.classList.add('text-green-500');
+                voucherMessage.classList.remove('hidden');
+
+            } else {
+                updateFinalPrice(HARGA_DASAR_GLOBAL);
+                voucherMessage.textContent = result.message || 'Voucher tidak valid.';
+                voucherMessage.classList.remove('text-green-500');
+                voucherMessage.classList.add('text-red-500');
+                voucherMessage.classList.remove('hidden');
+            }
+
+        } catch (error) {
+            voucherMessage.textContent = 'Server error saat cek voucher.';
+            voucherMessage.classList.remove('text-green-500');
+            voucherMessage.classList.add('text-red-500');
+            voucherMessage.classList.remove('hidden');
+            console.error('AJAX Error checking voucher:', error);
+        } finally {
+            btnCheckVoucher.disabled = false;
+        }
+    });
+
+    // ======================
+    // === LOGIKA METODE BAYAR
+    // ======================
     selectMetode.addEventListener('change', function() {
-        if (this.value === 'Gopay' || this.value === 'QRIS') {
+        const metode = this.value;
+        const isBankTransfer = ['BRI', 'BCA', 'Mandiri'].includes(metode);
+
+        // Tampilkan QRIS/Gopay jika perlu
+        if (metode === 'Gopay' || metode === 'QRIS') {
             qrisDisplay.classList.remove('hidden');
         } else {
             qrisDisplay.classList.add('hidden');
         }
+
+        // Bukti transfer
+        if (isBankTransfer) {
+            transferContainer.classList.remove('hidden');
+            inputBuktiTransfer.required = true;
+            btnKonfirmasiBayar.textContent = 'Konfirmasi Pembayaran';
+            if (inputBuktiTransfer.files.length === 0) {
+                 btnKonfirmasiBayar.disabled = true;
+            } else {
+                 btnKonfirmasiBayar.disabled = false;
+            }
+        } else {
+            transferContainer.classList.add('hidden');
+            inputBuktiTransfer.required = false;
+            inputBuktiTransfer.value = ''; 
+            btnKonfirmasiBayar.textContent = 'Bayar Sekarang';
+            btnKonfirmasiBayar.disabled = false;
+        }
     });
 
-    // Implementasi AJAX untuk Konfirmasi Pembayaran
+    inputBuktiTransfer.addEventListener('change', function() {
+        btnKonfirmasiBayar.disabled = (this.files.length === 0);
+    });
+
+    // ======================
+    // === SUBMIT FORM BAYAR
+    // ======================
     formPembayaran.addEventListener('submit', function(e) {
         e.preventDefault();
-        
-        // Cek validitas form
+
         if (!formPembayaran.checkValidity()) {
             formPembayaran.reportValidity();
             return;
         }
 
-        const btn = document.getElementById('btn-konfirmasi-bayar');
-        btn.disabled = true;
-        btn.textContent = 'Memproses...';
+        btnKonfirmasiBayar.disabled = true;
+        btnKonfirmasiBayar.textContent = 'Memproses...';
 
-        // Menggunakan FormData untuk mengirim data form, termasuk file
-        const formData = new FormData(formPembayaran);
-        
-        // URL endpoint AJAX untuk proses pembayaran (Anda harus buat ini di views.py)
-        // Ganti '0' dengan Order ID yang sebenarnya
         const apiUrl = "{% url 'payment:proses_bayar_ajax' order_id='0' %}".replace('0', orderId);
 
         fetch(apiUrl, {
             method: 'POST',
-            body: formData, // FormData otomatis mengurus Content-Type dan file
-            headers: {
-                // Jangan set Content-Type: application/json saat mengirim file.
-                // Fetch akan otomatis set Content-Type: multipart/form-data
-                'X-CSRFToken': CSRF_TOKEN
-            },
+            body: new FormData(this),
+            headers: { 'X-CSRFToken': CSRF_TOKEN },
         })
         .then(response => {
             if (!response.ok) {
-                return response.json().then(err => { throw new Error(err.message || 'Gagal terhubung ke server.'); });
+                return response.json().then(err => { 
+                    throw new Error(err.message || `Gagal dengan status ${response.status}.`); 
+                }).catch(() => {
+                    throw new Error(`Terjadi kesalahan server (${response.status}).`);
+                });
             }
             return response.json();
         })
         .then(data => {
             if (data.status === 'success') {
-                alert('Konfirmasi pembayaran berhasil. E-Ticket akan segera dikirimkan ke email Anda.');
-                // Redirect ke halaman sukses atau cek status
-                window.location.href = data.redirect_url || '/pembayaran/sukses/'; 
+                modalEticket.classList.remove('hidden');
+                document.querySelectorAll('[id^="qr-img-"]').forEach(imgElement => {
+                    imgElement.src = imgElement.src.split("?")[0] + "?" + new Date().getTime();
+                    const textNode = document.getElementById('qr-text-' + imgElement.id.split('-').pop());
+                    if (textNode) textNode.style.display = 'none';
+                    imgElement.style.display = 'block';
+                });
             } else {
                 alert('Gagal konfirmasi pembayaran: ' + data.message);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Terjadi kesalahan saat upload bukti. Cek konsol dan pastikan file berukuran kecil.');
+            alert('Terjadi kesalahan saat memproses pembayaran: ' + error.message);
         })
         .finally(() => {
-            btn.disabled = false;
-            btn.textContent = 'Konfirmasi Pembayaran';
+            btnKonfirmasiBayar.disabled = false;
+            btnKonfirmasiBayar.textContent = 'Konfirmasi Pembayaran';
         });
+    });
+
+    document.getElementById('btn-tutup-eticket-modal').addEventListener('click', function() {
+        modalEticket.classList.add('hidden');
+        window.location.href = '/';
     });
 </script>
 
