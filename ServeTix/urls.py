@@ -15,10 +15,14 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
+<<<<<<< HEAD
 from django.urls import path, include, reverse_lazy # Import reverse_lazy
 from django.views.generic import RedirectView # Import RedirectView
 from django.conf import settings
 from django.conf.urls.static import static
+=======
+from django.urls import path, include
+>>>>>>> 9907a36664ce69e8cb1bf4ab56a24ded99668587
 
 urlpatterns = [
 path('accounts/', include(([
@@ -29,7 +33,11 @@ path('accounts/', include(([
     ], 'user'), namespace='account')), # Menggunakan namespace 'account'
     path('', RedirectView.as_view(url=reverse_lazy('payment:detail_pembeli')), name='root_redirect'),
     path('admin/', admin.site.urls),
+<<<<<<< HEAD
     path('payment/', include('payment.urls', namespace='payment')),
+=======
+    path('', include('matches.urls')),
+>>>>>>> 9907a36664ce69e8cb1bf4ab56a24ded99668587
 ]
 
 if settings.DEBUG:

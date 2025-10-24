@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Serve.Tix — Daftar Pertandingan{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+  <h1 class="text-3xl font-bold mb-4">Upcoming Matches</h1>
+
+  {% if matches.count == 0 %}
+    <div class="p-6 bg-yellow-50 rounded-md border">Tidak ada pertandingan. {{ note }}</div>
+  {% else %}
+    <ul class="space-y-4">
+      {% for m in matches %}
+      <li class="p-4 bg-white rounded-lg shadow-sm flex justify-between items-center">
+        <div>
+          <div class="text-lg font-semibold">{{ m.title }}</div>
+          <div class="text-sm text-gray-600">{{ m.venue.name }} • {{ m.start_time|date:"d F Y - H:i" }}</div>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="text-right">
+            <div class="text-sm text-gray-500">From</div>
+            <div class="font-bold text-serve-accent">Rp {{ m.price_from|floatformat:0 }}</div>
+          </div>
+          <a href="{% url 'matches:match_detail' m.id %}" class="px-4 py-2 bg-serve-accent text-white rounded-md">Lihat</a>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+</div>
+{% endblock %}
