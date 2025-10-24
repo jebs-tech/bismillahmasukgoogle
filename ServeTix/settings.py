@@ -49,6 +49,8 @@ INSTALLED_APPS = [
     'payment',
     'voucher',
     'homepage',
+    'forums',    
+    'notifications',
 ]
 
 MIDDLEWARE = [

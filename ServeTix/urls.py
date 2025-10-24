@@ -11,13 +11,15 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('forums/', include('forums.urls')), 
+    path('', include('user.urls')),
     path('', include('matches.urls')),
     path('', include('homepage.urls')),
     path('payment/', include('payment.urls', namespace='payment')),
-    path('', include('user.urls')),
-    
+    path('notifications/', include('notifications.urls')),
     path('vouchers/', include('voucher.urls', namespace='voucher')),
 ]
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+

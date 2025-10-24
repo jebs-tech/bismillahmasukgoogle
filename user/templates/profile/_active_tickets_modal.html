@@ -1,31 +1,48 @@
+{% load static %}
+{% load humanize %}
+
 {% if active_purchases %}
     <div class="space-y-4 p-4 max-h-[70vh] overflow-y-auto"> 
+        
+        <div class="p-2 mb-2">
+            <h3 class="text-xl font-bold text-brand-dark-blue">Daftar Tiket Aktif</h3>
+            <p class="text-sm text-gray-600">Total {{ active_purchases.count }} pembelian terkonfirmasi.</p>
+        </div>
+
         {% for purchase in active_purchases %}
-            <div class="mb-3 pb-3 border-b">
-                 <h3 class="text-sm font-bold text-gray-900">{{ purchase.match.title }}</h3>
+        
+        <div class="space-y-3 p-3 border border-brand-light-blue/50 rounded-lg bg-white shadow-sm">
+            
+            <div class="pb-2 border-b border-gray-100">
+                 <h3 class="text-base font-bold text-brand-dark-blue">{{ purchase.match.title }}</h3>
                  <p class="text-xs text-gray-500">{{ purchase.match.venue.name }} - {{ purchase.match.start_time|date:"d M Y, H:i" }}</p>
             </div>
+            
             <div class="space-y-2">
                 {% for seat in purchase.seats.all %}
-                <div class="flex items-center justify-between p-2 bg-gray-50 border border-gray-100 rounded">
+                <div class="flex items-center justify-between p-2 bg-brand-light-blue/5 rounded">
                     <div>
                         <span class="text-sm font-semibold text-gray-800">{{ seat.category.name }}</span>
-                        <span class="text-xs text-gray-500">- {{ seat.row }}{{ seat.col }}</span>
+                        <span class="text-xs text-gray-600">- {{ seat.row }}{{ seat.col }}</span>
                     </div>
                     <button hx-get="{% url 'user:ticket_detail' ticket_id=seat.id %}"
                              hx-target="#modal-content" hx-swap="innerHTML" 
-                             class="px-2 py-1 text-xs bg-brand-orange text-white rounded shadow hover:bg-orange-500">
+                             class="px-3 py-1 text-xs bg-brand-orange text-white font-semibold rounded shadow hover:bg-orange-600 transition-colors">
                          Lihat QR
                      </button>
                 </div>
                 {% endfor %}
             </div>
-            {% if not forloop.last %}<hr class="my-3">{% endif %} {% endfor %}
+            
+        </div>
+        
+        {% endfor %}
+        
     </div>
 {% else %}
-    <div class="flex flex-col items-center justify-center p-8 text-center">
-        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-3">
-           <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" ...><path ...></path></svg> 
+    <div class="flex flex-col items-center justify-center p-8 text-center w-full max-w-xl">
+        <div class="w-16 h-16 bg-brand-light-blue/10 rounded-full flex items-center justify-center mb-3">
+           <svg class="w-8 h-8 text-brand-light-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg> 
         </div>
         <h3 class="text-base font-semibold text-gray-700">Belum Ada Tiket Aktif</h3>
         <p class="mt-1 text-xs text-gray-500">Tiket aktif Anda akan muncul di sini.</p>

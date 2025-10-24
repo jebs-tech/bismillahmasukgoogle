@@ -1,0 +1,439 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div id="thread-detail-container" data-thread-id="{{ thread.id }}" class="container mx-auto mt-10">
+
+  <!-- THREAD CARD -->
+  <!-- pastikan id="thread-card" & class thread-content ada supaya JS bisa membaca dan mengganti -->
+  <div id="thread-card" class="box thread-card">
+    <div class="thread-body">
+      <h2 class="thread-title">{{ thread.title }}</h2>
+      <p class="thread-content">{{ thread.content }}</p>
+
+      <p class="meta-info">
+        Oleh {{ thread.author.username|default:"Anonim" }} • {{ thread.created_at|date:"d M Y H:i" }}
+      </p>
+
+      <!-- VOTE BUTTONS -->
+      <div class="vote-buttons mt-3">
+        <button class="btn-upvote-thread" data-action="upvote" title="Upvote"><i class='fas fa-arrow-circle-up' style='color:rgb(197, 185, 131)'></i></button>
+        <span id="thread-{{ thread.id }}-score">{{ thread.score }}</span>
+        <button class="btn-downvote-thread" data-action="downvote" title="Downvote"><i class='fas fa-arrow-circle-down' style='color:rgb(197, 185, 131)'></i></button>
+      </div>
+
+      {% if user.is_superuser or user.is_authenticated and user == thread.author %}
+      <div class="mt-3 flex gap-2">
+        <!-- gunakan data-thread-id konsisten -->
+        <button class="btn-edit-thread text-white px-3 py-1 rounded-md hover:bg-[#ff8c00] transition" data-thread-id="{{ thread.id }}"> Edit</button>
+        <button class="btn-delete-thread text-white px-3 py-1 rounded-md hover:bg-red-600 transition" data-thread-id="{{ thread.id }}"> Delete</button>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- REPLIES -->
+  <div id="replies-container" class="mt-6">
+    {% for reply in replies %}
+      {% include 'forums/threads/reply_card.html' %}
+    {% empty %}
+      <p class="text-gray-600 italic text-center">Belum ada balasan.</p>
+    {% endfor %}
+  </div>
+
+  <!-- REPLY INPUT -->
+  {% if user.is_authenticated %}
+  <div class="mt-6 flex justify-center">
+    <textarea
+      id="reply-input"
+      class="w-3/4 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-brand-gold outline-none transition"
+      rows="2"
+      placeholder="Tulis balasan lalu tekan Enter..."
+    ></textarea>
+  </div>
+  {% else %}
+  <p class="text-center mt-4 text-gray-600">
+    Silakan <a href="/login/" class="text-brand-orange font-semibold hover:underline">login</a> untuk membalas.
+  </p>
+  {% endif %}
+</div>
+
+<!-- ========== EDIT MODAL ========== -->
+<div id="editModal" class="fixed inset-0 bg-black bg-opacity-40 hidden justify-center items-center z-50">
+  <div class="bg-white rounded-lg shadow-lg w-11/12 max-w-md p-6 relative">
+    <h3 id="editModalTitle" class="text-lg font-semibold text-brand-dark-blue mb-3">Edit</h3>
+    <textarea id="editModalTextarea" class="w-full border border-gray-300 rounded-md p-2 h-32 focus:ring-2 focus:ring-brand-gold outline-none"></textarea>
+    <div class="mt-4 flex justify-end gap-3">
+      <button id="cancelEditBtn" class="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400 transition">Batal</button>
+      <button id="saveEditBtn" class="px-4 py-2 bg-brand-orange text-white rounded-md hover:bg-[#ff8c00] transition">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== CONFIRM DELETE MODAL ========== -->
+<div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-40 hidden justify-center items-center z-50">
+  <div class="bg-white rounded-lg shadow-lg w-11/12 max-w-sm p-6 relative">
+    <h3 class="text-lg font-semibold text-brand-dark-blue mb-2">Konfirmasi Penghapusan</h3>
+    <p id="confirmText" class="text-gray-700 mb-4">Apakah kamu yakin ingin menghapus item ini?</p>
+    <div class="flex justify-end gap-3">
+      <button id="cancelDeleteBtn" class="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400 transition">Batal</button>
+      <button id="confirmDeleteBtn" class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition">Hapus</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= -->
+<!-- AJAX SCRIPT HANDLER -->
+<!-- ======================= -->
+<script>
+// ambil CSRF token dari cookie (fungsi kecil, aman)
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    for (let cookie of document.cookie.split(';')) {
+      cookie = cookie.trim();
+      if (cookie.startsWith(name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+const csrftoken = getCookie('csrftoken');
+
+document.addEventListener('DOMContentLoaded', function() {
+  const container = document.getElementById('thread-detail-container');
+  if (!container) return;
+  const threadId = container.dataset.threadId;
+
+  // modal elements
+  const editModal = document.getElementById('editModal');
+  const editTextarea = document.getElementById('editModalTextarea');
+  const saveEditBtn = document.getElementById('saveEditBtn');
+  const cancelEditBtn = document.getElementById('cancelEditBtn');
+
+  const confirmModal = document.getElementById('confirmModal');
+  const confirmText = document.getElementById('confirmText');
+  const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+  const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+
+  let currentEdit = { type: null, id: null }; // { type: 'thread'|'reply', id: <id> }
+  let deleteTarget = { type: null, id: null }; // for confirm modal
+
+  function openEditModal(type, id, initialText) {
+    currentEdit = { type, id };
+    if (editTextarea) editTextarea.value = initialText || '';
+    if (editModal) {
+      editModal.classList.remove('hidden');
+      editModal.classList.add('flex');
+    }
+    if (editTextarea) editTextarea.focus();
+  }
+  function closeEditModal() {
+    currentEdit = { type: null, id: null };
+    if (editModal) {
+      editModal.classList.add('hidden');
+      editModal.classList.remove('flex');
+    }
+    if (editTextarea) editTextarea.value = '';
+  }
+
+  function openConfirmModal(type, id, text) {
+    deleteTarget = { type, id };
+    confirmText.textContent = text || 'Apakah kamu yakin?';
+    if (confirmModal) {
+      confirmModal.classList.remove('hidden');
+      confirmModal.classList.add('flex');
+    }
+  }
+  function closeConfirmModal() {
+    deleteTarget = { type: null, id: null };
+    if (confirmModal) {
+      confirmModal.classList.add('hidden');
+      confirmModal.classList.remove('flex');
+    }
+  }
+
+  // close modals on cancel / outside click
+  if (cancelEditBtn) cancelEditBtn.addEventListener('click', closeEditModal);
+  if (editModal) editModal.addEventListener('click', e => { if (e.target === editModal) closeEditModal(); });
+
+  if (cancelDeleteBtn) cancelDeleteBtn.addEventListener('click', closeConfirmModal);
+  if (confirmModal) confirmModal.addEventListener('click', e => { if (e.target === confirmModal) closeConfirmModal(); });
+
+  // ======================
+  // ENTER to send reply
+  // ======================
+  const replyInput = document.getElementById('reply-input');
+  if (replyInput) {
+    replyInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        const content = this.value.trim();
+        if (!content) return;
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', csrftoken);
+        formData.append('content', content);
+
+        fetch(`/forums/ajax/${threadId}/reply/`, {
+          method: 'POST',
+          body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            // gunakan HTML yang dikirim server (reply_card) sehingga tombol & vote ada
+            document.getElementById('replies-container').insertAdjacentHTML('beforeend', data.html);
+            this.value = '';
+            // highlight singkat
+            const newReply = document.getElementById(`reply-${data.reply_id}`);
+            if (newReply) {
+              newReply.style.backgroundColor = '#fff7d1';
+              setTimeout(() => newReply.style.backgroundColor = '', 700);
+            }
+          } else {
+            console.error('reply error', data);
+            alert('Gagal mengirim balasan.');
+          }
+        })
+        .catch(err => {
+          console.error('reply fetch error', err);
+          alert('Terjadi kesalahan jaringan saat mengirim balasan.');
+        });
+      }
+    });
+  }
+
+  // ======================
+  // DELEGATED CLICK HANDLER (edit / delete / vote both thread & replies)
+  // ======================
+  document.addEventListener('click', function(e) {
+    // ---- EDIT THREAD ----
+    const editThreadBtn = e.target.closest('.btn-edit-thread');
+    if (editThreadBtn) {
+      // ambil isi thread dari element .thread-content
+      const threadCard = document.getElementById('thread-card');
+      const contentElem = threadCard ? threadCard.querySelector('.thread-content') : null;
+      const oldContent = contentElem ? contentElem.textContent.trim() : '';
+      const tid = editThreadBtn.dataset.threadId || threadId;
+      openEditModal('thread', tid, oldContent);
+      return;
+    }
+
+    // ---- DELETE THREAD (open confirm) ----
+    const delThreadBtn = e.target.closest('.btn-delete-thread');
+    if (delThreadBtn) {
+      const tid = delThreadBtn.dataset.threadId || threadId;
+      openConfirmModal('thread', tid, 'Apakah kamu yakin ingin menghapus thread ini?');
+      return;
+    }
+
+    // ---- EDIT REPLY ----
+    const editReplyBtn = e.target.closest('.btn-edit');
+    if (editReplyBtn) {
+      const rid = editReplyBtn.dataset.replyId;
+      const replyElem = document.getElementById(`reply-${rid}`);
+      const oldTextElem = replyElem ? replyElem.querySelector('.reply-content') : null;
+      const oldText = oldTextElem ? oldTextElem.textContent.trim() : '';
+      openEditModal('reply', rid, oldText);
+      return;
+    }
+
+    // ---- DELETE REPLY (open confirm) ----
+    const delReplyBtn = e.target.closest('.btn-delete');
+    if (delReplyBtn) {
+      const rid = delReplyBtn.dataset.replyId;
+      openConfirmModal('reply', rid, 'Apakah kamu yakin ingin menghapus balasan ini?');
+      return;
+    }
+
+    // ---- THREAD VOTE ----
+    const upThread = e.target.closest('.btn-upvote-thread');
+    const downThread = e.target.closest('.btn-downvote-thread');
+    if (upThread || downThread) {
+      const btn = upThread || downThread;
+      const action = btn.dataset.action;
+      fetch(`/forums/ajax/${threadId}/vote/`, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': csrftoken,
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: `action=${encodeURIComponent(action)}`
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.success) {
+          const scoreEl = document.getElementById(`thread-${threadId}-score`);
+          if (scoreEl) scoreEl.textContent = data.score;
+        } else {
+          console.error('vote thread failed', data);
+          alert('Gagal memberi suara pada thread.');
+        }
+      })
+      .catch(err => {
+        console.error('vote thread err', err);
+        alert('Kesalahan jaringan saat voting.');
+      });
+      return;
+    }
+
+    // ---- REPLY VOTE ----
+    const upReply = e.target.closest('.btn-upvote-reply');
+    const downReply = e.target.closest('.btn-downvote-reply');
+    if (upReply || downReply) {
+      const btn = upReply || downReply;
+      const replyElem = btn.closest('.reply-item');
+      if (!replyElem) return;
+      const rid = replyElem.dataset.replyId;
+      const action = btn.dataset.action;
+
+      fetch(`/forums/ajax/reply/${rid}/vote/`, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': csrftoken,
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: `action=${encodeURIComponent(action)}`
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.success) {
+          const scoreEl = document.getElementById(`reply-${rid}-score`);
+          if (scoreEl) scoreEl.textContent = data.score;
+        } else {
+          console.error('vote reply failed', data);
+          alert('Gagal memberi suara pada balasan.');
+        }
+      })
+      .catch(err => {
+        console.error('vote reply err', err);
+        alert('Kesalahan jaringan saat voting balasan.');
+      });
+      return;
+    }
+  }); // end delegated click
+
+  // ======================
+  // SAVE EDIT (thread or reply)
+  // ======================
+  if (saveEditBtn) {
+    saveEditBtn.addEventListener('click', function() {
+      const { type, id } = currentEdit;
+      if (!type || !id) return;
+      const newContent = (editTextarea && editTextarea.value || '').trim();
+      if (!newContent) return alert('Isi tidak boleh kosong.');
+
+      const formData = new FormData();
+      formData.append('csrfmiddlewaretoken', csrftoken);
+      formData.append('content', newContent);
+
+      if (type === 'thread') {
+        // kirim juga title agar ThreadForm valid (gunakan title yang ada sekarang)
+        const titleElem = document.querySelector('#thread-card .thread-title');
+        const titleText = titleElem ? titleElem.textContent.trim() : '';
+        formData.append('title', titleText);
+
+        fetch(`/forums/ajax/${id}/edit/`, {
+          method: 'POST',
+          body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.success) {
+            // server mengembalikan partial HTML untuk card thread (data.html)
+            if (data.html) {
+              const threadCard = document.getElementById('thread-card');
+              if (threadCard) threadCard.outerHTML = data.html;
+            } else {
+              // fallback: update content only
+              const contentElem = document.querySelector('#thread-card .thread-content');
+              if (contentElem) contentElem.textContent = newContent;
+            }
+            closeEditModal();
+          } else {
+            console.error('edit thread failed', data);
+            alert('Gagal menyimpan perubahan thread.');
+          }
+        })
+        .catch(err => {
+          console.error('edit thread err', err);
+          alert('Kesalahan jaringan saat menyimpan thread.');
+        });
+      }
+      else if (type === 'reply') {
+        fetch(`/forums/ajax/reply/${id}/edit/`, {
+          method: 'POST',
+          body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.success) {
+            if (data.html) {
+              const replyElem = document.getElementById(`reply-${id}`);
+              if (replyElem) replyElem.outerHTML = data.html;
+            } else {
+              const replyContent = document.querySelector(`#reply-${id} .reply-content`);
+              if (replyContent) replyContent.textContent = newContent;
+            }
+            closeEditModal();
+          } else {
+            console.error('edit reply failed', data);
+            alert('Gagal menyimpan perubahan balasan.');
+          }
+        })
+        .catch(err => {
+          console.error('edit reply err', err);
+          alert('Kesalahan jaringan saat menyimpan balasan.');
+        });
+      }
+    });
+  }
+
+  // ======================
+  // CONFIRM DELETE ACTION (thread or reply)
+  // ======================
+  if (confirmDeleteBtn) {
+    confirmDeleteBtn.addEventListener('click', function() {
+      const { type, id } = deleteTarget;
+      if (!type || !id) return;
+
+      let url = '';
+      if (type === 'thread') url = `/forums/ajax/${id}/delete/`;
+      if (type === 'reply') url = `/forums/ajax/reply/${id}/delete/`;
+
+      fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrftoken }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.success) {
+          if (type === 'thread') {
+            // redirect ke forum list
+            window.location.href = '/forums/';
+          } else if (type === 'reply') {
+            const replyElem = document.getElementById(`reply-${id}`);
+            if (replyElem) replyElem.remove();
+          }
+        } else {
+          console.error('delete failed', data);
+          alert('Gagal menghapus item.');
+        }
+      })
+      .catch(err => {
+        console.error('delete err', err);
+        alert('Kesalahan jaringan saat menghapus.');
+      })
+      .finally(() => closeConfirmModal());
+    });
+  }
+
+  // ESC to close edit modal
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeEditModal();
+  });
+}); // DOMContentLoaded end
+</script>
+{% endblock %}
