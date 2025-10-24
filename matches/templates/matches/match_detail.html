@@ -3,6 +3,16 @@
 {% block title %}{{ match.title }} — Detail{% endblock %}
 
 {% block content %}
+<!-- Tombol Back ke halaman daftar pertandingan -->
+<div class="mb-4">
+  <a href="{% url 'matches:index' %}"
+    class="inline-flex items-center gap-2 text-serve-navy font-semibold hover:underline hover:translate-x-[-2px] transition-transform duration-150">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+      Kembali
+  </a>
+</div>
 
 <!-- HERO -->
 <section class="mb-8">
@@ -13,135 +23,161 @@
   </p>
 </section>
 
-<!-- STADIUM BANNER (full width) -->
+<!-- STADIUM BANNER -->
 <div class="mb-6">
-  <div class="bg-serve-accent rounded-xl py-10 px-6">
+  <div class="bg-brand-orange rounded-xl py-8 px-6">
     <div class="bg-serve-accent-2 rounded-md py-8 px-6 flex items-center justify-between">
+      
       <!-- TEAM LEFT -->
       <div class="flex items-center gap-4">
+        <!-- Nama dulu, baru logo -->
+        <div class="text-2xl font-bold">{{ team_left }}</div>
         {% if match.home_team and match.home_team.logo %}
-          <img src="{{ match.home_team.logo.url }}" alt="{{ match.home_team.name }}" class="w-12 h-12 rounded-full object-cover border-2 border-serve-navy" />
+          <img src="{{ match.home_team.logo.url }}" alt="{{ match.home_team.name }}" 
+               class="w-14 h-14 rounded-full object-cover border-2 border-serve-navy" />
         {% else %}
-          <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center text-xl font-bold border-2 border-serve-navy">
+          <div class="w-14 h-14 rounded-full bg-white flex items-center justify-center text-xl font-bold border-2 border-serve-navy">
             {{ team_left|slice:":2" }}
           </div>
         {% endif %}
-        <div class="text-3xl font-bold">
-          {{ team_left }}
-        </div>
       </div>
 
+      <!-- TENGAH (tanggal di atas jam) -->
       <div class="text-center">
-        <div class="text-lg font-semibold text-serve-navy">
-          {{ match.short_time|default:match.start_time|date:"j F" }}
-        </div>
-        <div class="text-sm font-bold text-serve-navy">
-          {% if match.start_time %}
-            {{ match.start_time|date:"j F Y, H:i" }}
-          {% else %}
-            Tanggal belum ditentukan
-          {% endif %}
-
-        </div>
+        {% if match.start_time %}
+          <div class="text-xl font-bold text-serve-navy mb-1">
+            {{ match.start_time|date:"j F Y" }}
+          </div>
+          <div class="text-lg font-medium text-serve-navy">
+            {{ match.start_time|date:"H:i" }}
+          </div>
+        {% else %}
+          <div class="text-2xl font-semibold text-serve-navy">Tanggal belum ditentukan</div>
+        {% endif %}
       </div>
 
       <!-- TEAM RIGHT -->
       <div class="flex items-center gap-4">
-        <div class="text-3xl font-bold">
-          {{ team_right }}
-        </div>
+        <!-- Logo dulu, baru nama -->
         {% if match.away_team and match.away_team.logo %}
-          <img src="{{ match.away_team.logo.url }}" alt="{{ match.away_team.name }}" class="w-12 h-12 rounded-full object-cover border-2 border-serve-navy" />
+          <img src="{{ match.away_team.logo.url }}" alt="{{ match.away_team.name }}" 
+               class="w-14 h-14 rounded-full object-cover border-2 border-serve-navy" />
         {% else %}
-          <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center text-xl font-bold border-2 border-serve-navy">
+          <div class="w-14 h-14 rounded-full bg-white flex items-center justify-center text-xl font-bold border-2 border-serve-navy">
             {{ team_right|slice:":2" }}
           </div>
         {% endif %}
+        <div class="text-2xl font-bold">{{ team_right }}</div>
       </div>
+
     </div>
   </div>
 </div>
 
-<!-- DETAIL + SEATMAP + SIDEBAR (single booking box on right) -->
-<section class="mt-10 grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-  <!-- Left: about + seatmap -->
-  <div class="lg:col-span-2 space-y-6">
-    <div class="bg-white p-6 rounded-lg">
-      <h3 class="text-lg font-bold mb-2">Detail Pengalaman</h3>
-      <p class="text-gray-700">{{ match.description|linebreaksbr }}</p>
+
+<!-- DETAIL SECTION -->
+<section class="mt-10 space-y-12">
+
+  <!-- GRID: tanggal | lokasi | booking -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+    <!-- Tanggal -->
+    <div class="flex items-center gap-3">
+      <!-- inline calendar SVG (hitam-putih via currentColor) -->
+      <svg class="w-6 h-6 text-black shrink-0" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-2 .89-2 2v13c0 1.1.89 2 2 2h14c1.11 0 2-.9 2-2V6c0-1.11-.89-2-2-2zm0 15H5V9h14v10z"/>
+      </svg>
+      <div>
+        <p class="text-sm text-gray-500 font-semibold">Tanggal</p>
+        <p class="font-medium text-gray-800">
+          {% if match.start_time %}
+            {{ match.start_time|date:"j F Y" }}
+            {% if match.end_time %} – {{ match.end_time|date:"j F Y" }}{% endif %}
+          {% else %}
+            Tanggal belum ditentukan
+          {% endif %}
+        </p>
+        {% if match.start_time %}
+          <div class="text-sm text-gray-500 mt-1">{{ match.start_time|date:"H:i" }}</div>
+        {% endif %}
+      </div>
     </div>
 
-    <div class="bg-white p-6 rounded-lg" id="seatmap">
-      <h4 class="text-md font-semibold mb-4">Denah Tempat Duduk</h4>
+    <!-- Lokasi -->
+    <div class="flex items-center gap-3">
+      <!-- inline location SVG (hitam-putih via currentColor) -->
+      <svg class="w-6 h-6 text-black shrink-0" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/>
+      </svg>
+      <div>
+        <p class="text-sm text-gray-500 font-semibold">Lokasi</p>
+        <p class="font-medium text-gray-800 uppercase">{{ match.venue.name }}</p>
+        {% if match.venue.address %}
+          <div class="text-sm text-gray-500 mt-1">{{ match.venue.address }}</div>
+        {% endif %}
+      </div>
+    </div>
 
-      <div class="flex gap-6">
-        <!-- SVG dari file -->
-        <div class="flex-1 overflow-auto border rounded-lg">
-          <img src="{% static 'matches/img/denah_seating.svg' %}" alt="Denah tempat duduk" class="w-full h-auto" />
+    <!-- Booking -->
+    <div class="flex justify-start md:justify-end">
+      <div class="max-w-xs w-full">
+        <h4 class="text-2xl font-bold mb-2">Pesan Sekarang</h4>
+
+        <div class="text-md font-semibold mb-2">
+          Mulai dari <span class="text-black">Rp {{ match.price_from }} (termasuk pajak)</span>
         </div>
 
-        <!-- legend (kanan) -->
-        <div class="w-60">
-          <h5 class="font-semibold mb-3">Kategori Tempat Duduk</h5>
-          <div class="space-y-3 text-sm">
-            <div class="flex items-center gap-3">
-              <span class="w-8 h-8 block rounded-md" style="background:#a5b4fc"></span>
-              <div>Tiket Perunggu</div>
-            </div>
-            <div class="flex items-center gap-3">
-              <span class="w-8 h-8 block rounded-md" style="background:#c7f9cc"></span>
-              <div>Tiket Perak</div>
-            </div>
-            <div class="flex items-center gap-3">
-              <span class="w-8 h-8 block rounded-md" style="background:#fff89a"></span>
-              <div>Tiket Emas</div>
-            </div>
-          </div>
+        <a href="{% url 'matches:checkout' match.id %}"
+           class="block w-full text-center bg-brand-orange text-white py-2 rounded-full font-semibold hover:bg-brand-orange/90 transition">
+          Beli Tiket
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detail Pengalaman (2/3 width pada layar medium ke atas) -->
+  <div class="mx-0 md:mx-0 lg:mx-0">
+    <div class="md:w-2/3">
+      <h3 class="text-2xl font-bold mb-2">Detail Pengalaman</h3>
+      <p class="text-gray-700 leading-relaxed">{{ match.description|linebreaksbr }}</p>
+    </div>
+  </div>
+
+  <!-- Denah & Kategori (masing-masing 1/2 width) -->
+  <!-- Perubahan utama: kolom kanan (kategori) dibuat flex-center vertikal,
+       tiap item kategori diberi background warna penuh dan lebar yang rapi -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <!-- Denah -->
+    <div>
+      <h4 class="text-xl font-semibold mb-3">Denah Tempat Duduk</h4>
+      <div class="w-full h-auto border rounded-lg overflow-hidden bg-transparent">
+        <img src="{% static 'matches/img/denah_seating.svg' %}" alt="Denah tempat duduk" class="w-full h-auto" />
+      </div>
+    </div>
+
+    <!-- Kategori: center vertically -->
+    <div class="flex items-center">
+      <!-- wrapper untuk memusatkan kotak kategori secara horizontal dan memberi max-width -->
+      <div class="w-full max-w-md mx-auto space-y-6">
+        <h4 class="text-xl font-semibold mb-2 text-center md:text-left">Kategori Tempat Duduk</h4>
+
+        <!-- Perunggu -->
+        <div class="rounded-md px-6 py-4 w-full" style="background:#a5b4fc;">
+          <div class="text-gray-900 font-medium">Perunggu</div>
+        </div>
+
+        <!-- Perak -->
+        <div class="rounded-md px-6 py-4 w-full" style="background:#c7f9cc;">
+          <div class="text-gray-900 font-medium">Perak</div>
+        </div>
+
+        <!-- Emas -->
+        <div class="rounded-md px-6 py-4 w-full" style="background:#fff89a;">
+          <div class="text-gray-900 font-medium">Emas</div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Right: single booking checkout card (sticky) -->
-  <aside class="space-y-4">
-    <div class="bg-white p-6 rounded-lg sticky top-6 shadow">
-      <h4 class="text-lg font-semibold">Pesan Sekarang</h4>
-
-      <div class="mt-3 text-2xl font-bold">
-        From <span class="text-serve-accent">Rp {{ match.price_from }}</span>
-      </div>
-      <div class="text-sm text-gray-500">Pax included</div>
-
-      <div class="mt-4 text-sm text-gray-600">
-        Mulai dari Rp {{ match.price_from }} (termasuk pajak)
-      </div>
-
-      <a href="{% url 'matches:checkout' match.id %}"
-         class="mt-6 block w-full text-center bg-serve-accent text-white py-2 rounded-full font-semibold hover:bg-serve-accent/90">
-        Beli Tiket
-      </a>
-
-      <div class="mt-6 grid grid-cols-2 gap-4 text-sm text-gray-700">
-        <div class="flex items-start gap-3">
-          <div class="text-2xl">📅</div>
-          <div>
-            <div class="text-xs text-gray-500">Mulai dari</div>
-            <div class="text-sm">{{ match.start_time|date:"j F Y" }}</div>
-          </div>
-        </div>
-
-        <div class="flex items-start gap-3">
-          <div class="text-2xl">📍</div>
-          <div>
-            <div class="text-xs text-gray-500">Lokasi</div>
-            <div class="text-sm">{{ match.venue.name }}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </aside>
 </section>
 
 {% endblock %}
-
-{% block scripts %}{% endblock %}

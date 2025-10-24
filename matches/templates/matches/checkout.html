@@ -14,19 +14,17 @@
     </a>
   </div>
 
-  <h1 class="text-4xl font-bold text-serve-navy mb-8">Detail Pembeli & Penumpang</h1>
+  <h1 class="text-4xl font-bold text-serve-navy mb-8">Detail Pembeli</h1>
 
   <form id="checkout-form" class="space-y-6 bg-white shadow-lg rounded-2xl p-8" method="post">
     {% csrf_token %}
     <input type="hidden" id="match-id" name="match_id" value="{{ match.id }}" />
     <input type="hidden" id="selected-seat-ids" name="seat_ids" value="" />
 
-    <p class="text-sm text-gray-600">Isi data untuk tiap tiket. Klik "Tambah Tiket" untuk menambahkan lebih dari 1 tiket — data tiket sebelumnya akan tetap tersimpan.</p>
-
     <div id="passengers-container" class="space-y-4 mt-4"></div>
 
     <div class="flex gap-2">
-      <button id="add-ticket-btn" type="button" class="px-4 py-2 border rounded-md bg-serve-accent text-white hover:opacity-95">➕ Tambah Tiket</button>
+      <button id="add-ticket-btn" type="button" class="px-4 py-2 border rounded-md bg-brand-orange text-white hover:opacity-95">➕ Tambah Tiket</button>
       <button id="remove-last-btn" type="button" class="px-4 py-2 border rounded-md text-sm hover:bg-gray-100">🗑️ Hapus Tiket Terakhir</button>
       <div class="ml-auto text-sm text-gray-500 self-center" id="tickets-count">1 tiket</div>
     </div>
@@ -45,7 +43,7 @@
 
     <div id="preselected-seats" class="text-sm text-gray-700 mt-2"></div>
 
-    <button id="submit-btn" type="submit" class="w-full bg-serve-accent text-white font-semibold py-2 rounded-full hover:bg-serve-accent/90">
+    <button id="submit-btn" type="submit" class="w-full bg-brand-orange text-white font-semibold py-2 rounded-full hover:bg-brand-orange/90">
       Lanjutkan Pembayaran
     </button>
 
@@ -57,23 +55,13 @@
   <div class="passenger-form border rounded-lg p-4 bg-white">
     <div class="flex justify-between items-center mb-3">
       <div class="font-medium passenger-title">Tiket #<span class="ticket-index">1</span></div>
-      <div class="text-sm text-gray-500 passenger-sub">Isilah data penumpang</div>
+      <div class="text-sm text-gray-500 passenger-sub">Isilah data pembeli</div>
     </div>
 
     <div class="grid grid-cols-1 gap-3">
       <div>
         <label class="block text-sm font-semibold mb-1">Nama Lengkap (sesuai KTP/Passport)</label>
         <input name="p_name" type="text" class="p_name w-full border rounded-lg px-3 py-2" placeholder="Nama penumpang" required />
-      </div>
-
-      <div>
-        <label class="block text-sm font-semibold mb-1">Kategori Tempat Duduk</label>
-        <select name="p_category" class="p_category w-full border rounded-lg px-3 py-2">
-          <option value="">Pilih kategori</option>
-          {% for cat in categories %}
-            <option value="{{ cat.name|escapejs }}" data-price="{{ cat.price|default:0 }}">{{ cat.name }} — Rp{{ cat.price|default:0 }}</option>
-          {% endfor %}
-        </select>
       </div>
 
       <div>
@@ -93,6 +81,16 @@
           <button type="button" class="gender-btn-mini flex-1 border rounded-full py-2 text-sm" data-gender="Perempuan">Perempuan</button>
         </div>
         <input name="p_gender" type="hidden" class="p_gender" value="" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold mb-1">Kategori Tempat Duduk</label>
+        <select name="p_category" class="p_category w-full border rounded-lg px-3 py-2">
+          <option value="">Pilih kategori</option>
+          {% for cat in categories %}
+            <option value="{{ cat.name|escapejs }}" data-price="{{ cat.price|default:0 }}">{{ cat.name }} — Rp{{ cat.price|default:0 }}</option>
+          {% endfor %}
+        </select>
       </div>
     </div>
   </div>
@@ -184,8 +182,8 @@
     document.querySelectorAll('.gender-btn-mini').forEach(btn => {
       btn.addEventListener('click', () => {
         const parent = btn.closest('.passenger-form');
-        parent.querySelectorAll('.gender-btn-mini').forEach(b => b.classList.remove('bg-serve-accent', 'text-white'));
-        btn.classList.add('bg-serve-accent', 'text-white');
+        parent.querySelectorAll('.gender-btn-mini').forEach(b => b.classList.remove('bg-brand-orange', 'text-white'));
+        btn.classList.add('bg-brand-orange', 'text-white');
         parent.querySelector('.p_gender').value = btn.dataset.gender;
       });
     });

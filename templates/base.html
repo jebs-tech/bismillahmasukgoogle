@@ -14,9 +14,10 @@
       theme: {
         extend: {
           colors: {
-            'serve-navy': '#0e2448',
-            'serve-cream': '#fbf4e6',
-            'serve-accent': '#d88b3f',
+            'brand-dark-blue': '#1a2a4b',
+            'brand-gold': '#FFC107',
+            'brand-orange': '#EF8832',
+            'brand-light-blue': '#4A69BD',
             'serve-accent-2': '#e9cf77'
           },
           fontFamily: {
@@ -28,16 +29,16 @@
   </script>
   {% block head %}{% endblock %}
 </head>
-<body class="bg-serve-cream text-gray-900 font-inter antialiased">
+<body class="bg-gradient-to-t from-[#FADF95] to-[#FFFFFF] min-h-screen flex flex-col">
 
   <!-- NAVBAR -->
-  <header class="bg-serve-navy text-white">
+  <header class="bg-brand-dark-blue text-white">
     <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
       <a href="{% url 'matches:index' %}" class="text-lg font-bold tracking-wide">
-        <span class="text-white">SERVE.</span><span class="text-serve-accent">TIX</span>
+        <span class="text-white">SERVE.</span><span class="text-brand-orange">TIX</span>
       </a>
       <div>
-        <a href="#" class="inline-block bg-yellow-300 text-serve-navy px-3 py-1 rounded-full font-medium">Masuk</a>
+        <a href="#" class="inline-block bg-yellow-300 text-brand-dark-blue px-3 py-1 rounded-full font-medium">Masuk</a>
       </div>
     </div>
   </header>
