@@ -1,0 +1,150 @@
+{% extends "base.html" %} 
+{% load static %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
+    <h2 class="text-3xl font-bold text-brand-dark-blue mb-6 border-b-2 border-brand-dark-blue pb-2">Detail Pembayaran</h2>
+
+    <div class="bg-white p-6 rounded-lg shadow-xl border-t-4 border-brand-orange">
+        
+        <div class="flex justify-between items-center mb-6">
+            <span class="text-lg text-gray-400">1. Detail Pembeli</span>
+            <span class="text-lg font-semibold text-brand-dark-blue">2. Detail Pembayaran</span>
+        </div>
+
+        <div class="bg-gray-50 p-4 rounded-lg mb-6 border border-gray-200">
+            <p class="text-sm text-gray-600">Order ID Anda:</p>
+            <p class="text-2xl font-extrabold text-brand-orange">{{ pembelian.order_id }}</p>
+            <p class="text-sm text-gray-600 mt-2">Status Pembayaran:</p>
+            <p class="text-lg font-semibold text-red-600">{{ pembelian.get_status_display }}</p>
+        </div>
+        
+        <div class="mb-6">
+            <h3 class="text-xl font-semibold text-gray-700 mb-4">Total Pembayaran</h3>
+            <div class="flex justify-between items-end p-3 bg-brand-light-blue rounded-md">
+                <p class="text-white text-base">Total yang Harus Dibayar:</p>
+                <p class="text-white text-3xl font-extrabold">{{ total_harga_formatted }}</p>
+            </div>
+            <p class="text-sm text-red-500 mt-2">Mohon lakukan transfer sesuai total harga di atas sebelum batas waktu yang ditentukan.</p>
+        </div>
+
+        <hr class="my-6">
+
+        <h3 class="text-xl font-semibold text-gray-700 mb-4">Pilih Metode Pembayaran</h3>
+        
+        <form id="form-pembayaran" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <input type="hidden" name="order_id" value="{{ pembelian.order_id }}">
+
+            <div class="mb-6">
+                <label for="metode_pembayaran" class="block text-sm font-medium text-gray-700 mb-2">Pilih Bank / E-Wallet</label>
+                <select id="metode_pembayaran" name="metode_pembayaran" required class="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-brand-light-blue focus:border-brand-light-blue sm:text-sm">
+                    <option value="" disabled selected>Pilih salah satu...</option>
+                    <option value="BRI">BRI - 0123456789 (a/n SERVE.TIX)</option>
+                    <option value="BCA">BCA - 9876543210 (a/n SERVE.TIX)</option>
+                    <option value="Mandiri">Mandiri - 1122334455 (a/n SERVE.TIX)</option>
+                    <option value="Gopay">Gopay / QRIS (Lihat QR Code di bawah)</option>
+                    <option value="QRIS">QRIS (Lihat QR Code di bawah)</option>
+                </select>
+            </div>
+
+            <div id="qris-display" class="mb-6 hidden">
+                <p class="text-center font-bold text-gray-700 mb-3">Scan QR Code Berikut:</p>
+                <div class="flex justify-center border p-4 rounded-md">
+                    <img src="{% static 'payment/images/qris_placeholder.png' %}" alt="QRIS Code" class="w-48 h-48 object-contain">
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <label for="bukti_transfer" class="block text-sm font-medium text-gray-700 mb-2">Upload Bukti Transfer (Max 2MB)</label>
+                <input type="file" id="bukti_transfer" name="bukti_transfer" accept="image/*" required class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-brand-light-blue file:text-white hover:file:bg-brand-dark-blue">
+            </div>
+
+            <button type="submit" id="btn-konfirmasi-bayar" class="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-brand-orange hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-orange font-bold">
+                Konfirmasi Pembayaran
+            </button>
+        </form>
+
+    </div>
+
+    <footer class="mt-8">
+        <div class="bg-brand-dark-blue p-4 rounded-t-lg">
+            <p class="text-center text-gray-400 text-sm">© 2025 SERVE.TIX</p>
+        </div>
+    </footer>
+</div>
+
+<script>
+    const formPembayaran = document.getElementById('form-pembayaran');
+    const selectMetode = document.getElementById('metode_pembayaran');
+    const qrisDisplay = document.getElementById('qris-display');
+    const orderId = "{{ pembelian.order_id|escapejs }}";
+    const CSRF_TOKEN = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    // Tampilkan/Sembunyikan QRIS berdasarkan pilihan
+    selectMetode.addEventListener('change', function() {
+        if (this.value === 'Gopay' || this.value === 'QRIS') {
+            qrisDisplay.classList.remove('hidden');
+        } else {
+            qrisDisplay.classList.add('hidden');
+        }
+    });
+
+    // Implementasi AJAX untuk Konfirmasi Pembayaran
+    formPembayaran.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Cek validitas form
+        if (!formPembayaran.checkValidity()) {
+            formPembayaran.reportValidity();
+            return;
+        }
+
+        const btn = document.getElementById('btn-konfirmasi-bayar');
+        btn.disabled = true;
+        btn.textContent = 'Memproses...';
+
+        // Menggunakan FormData untuk mengirim data form, termasuk file
+        const formData = new FormData(formPembayaran);
+        
+        // URL endpoint AJAX untuk proses pembayaran (Anda harus buat ini di views.py)
+        // Ganti '0' dengan Order ID yang sebenarnya
+        const apiUrl = "{% url 'payment:proses_bayar_ajax' order_id='0' %}".replace('0', orderId);
+
+        fetch(apiUrl, {
+            method: 'POST',
+            body: formData, // FormData otomatis mengurus Content-Type dan file
+            headers: {
+                // Jangan set Content-Type: application/json saat mengirim file.
+                // Fetch akan otomatis set Content-Type: multipart/form-data
+                'X-CSRFToken': CSRF_TOKEN
+            },
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => { throw new Error(err.message || 'Gagal terhubung ke server.'); });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                alert('Konfirmasi pembayaran berhasil. E-Ticket akan segera dikirimkan ke email Anda.');
+                // Redirect ke halaman sukses atau cek status
+                window.location.href = data.redirect_url || '/pembayaran/sukses/'; 
+            } else {
+                alert('Gagal konfirmasi pembayaran: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Terjadi kesalahan saat upload bukti. Cek konsol dan pastikan file berukuran kecil.');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.textContent = 'Konfirmasi Pembayaran';
+        });
+    });
+</script>
+
+{% endblock %}

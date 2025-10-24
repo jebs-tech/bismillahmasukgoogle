@@ -15,10 +15,22 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include, reverse_lazy # Import reverse_lazy
+from django.views.generic import RedirectView # Import RedirectView
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
+path('accounts/', include(([
+        # Login dan Logout harus memiliki nama 'login' dan 'logout'
+        path('login/', RedirectView.as_view(url='/login-soon/'), name='login'),
+        path('profile/', RedirectView.as_view(url='/profile-soon/'), name='profile'),
+        path('logout/', RedirectView.as_view(url='/logout-soon/'), name='logout'),
+    ], 'user'), namespace='account')), # Menggunakan namespace 'account'
+    path('', RedirectView.as_view(url=reverse_lazy('payment:detail_pembeli')), name='root_redirect'),
     path('admin/', admin.site.urls),
-    path('create/', views.create_payment, name='create_payment'),
-    path('payment/', include('payment.urls')),
+    path('payment/', include('payment.urls', namespace='payment')),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

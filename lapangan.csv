@@ -1,4 +1,4 @@
-nama_lapangan,alamat,kapasitas_maks,harga_suporter,harga_bronze,harga_silver,harga_gold
+nama_lapangan,alamat,kota,kapasitas_maks,harga_suporter,harga_bronze,harga_silver,harga_gold
 GOR Among Rogo,Jl. Taman Siswa No.1, Yogyakarta,8000,75000,150000,250000,500000
 GOR Jatidiri,Jl. Karangrejo, Kota Semarang,9000,75000,150000,250000,450000
 GOR Ken Arok,Jl. Mayjen Sungkono, Kota Malang,5000,50000,100000,200000,350000
@@ -99,3 +99,4 @@ GOR Pajajaran,Jl. Pajajaran, Bandung,2000,50000,100000,175000,300000
 GOR Tambak Sari,Jl. Tambak Sari, Jambi,800,N/A,N/A,N/A,N/A
 GOR Sahabudin,Jl. Dr. Sahabudin, Pangkal Pinang,1000,N/A,N/A,N/A,N/A
 GOR Sumpah Pemuda,Jl. Sumpah Pemuda, Lampung,2000,45000,90000,140000,240000
+

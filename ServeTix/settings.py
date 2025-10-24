@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'payment',
 ]
 
 MIDDLEWARE = [
@@ -59,7 +60,8 @@ ROOT_URLCONF = 'ServeTix.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
+        #'DIRS': [], # Biarkan ini kosong atau hapus jika Anda sudah mengatur di bawah
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -141,3 +143,15 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+import os
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' # Menampilkan email di konsol
+DEFAULT_FROM_EMAIL = 'Servetix <no-reply@servetix.com>'
+# Jika menggunakan SendGrid, ganti:
+# EMAIL_BACKEND = 'sendgrid_backend.SendgridBackend'
+# SENDGRID_API_KEY = 'YOUR_API_KEY'
