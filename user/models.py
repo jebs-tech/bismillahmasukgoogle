@@ -14,6 +14,11 @@ class Team(models.Model):
 class Event(models.Model):
     name = models.CharField(max_length=255)
     event_date = models.DateTimeField()
+
+    team_a = models.ForeignKey(Team, on_delete=models.SET_NULL, null=True, related_name='home_events')
+    team_b = models.ForeignKey(Team, on_delete=models.SET_NULL, null=True, related_name='away_events')
+    location = models.CharField(max_length=255, null=True, blank=True)
+    
     def __str__(self): return self.name
 
 # --- Model Inti untuk Akun Pengguna ---
