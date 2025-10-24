@@ -65,6 +65,8 @@
                 
                 <div class="flex items-center space-x-6">
 
+
+                    {% if user.is_authenticated %}
                     <div class="relative">
                         <a href="{% url 'user:profile' %}?tab=active_tickets" 
                            id="ticket-modal-trigger" 
@@ -84,8 +86,7 @@
                                    </div>
                         </div>
                     </div>
-
-                    {% if user.is_authenticated %}
+                    
                         <a href="{% url 'user:profile' %}" class="text-white hover:text-gray-300 transition duration-150 ease-in-out">
                             <span class="sr-only">Profil Pengguna</span>
                             <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -220,6 +221,20 @@
             closeTicketDropdown();
         }
     });
+    document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    const href = this.getAttribute('href');
+                    if (href === '#') return; // skip dummy link
+                    e.preventDefault();
+                    const target = document.querySelector(href);
+                    if (target) {
+                        const offsetTop = target.offsetTop - 80;
+                        window.scrollTo({ top: offsetTop, behavior: 'smooth' });
+                    }
+                });
+            });
+        });
 </script>
 
 <footer class="bg-blue-950 text-white py-6 sm:py-8">
@@ -235,5 +250,3 @@
         </div>
     </div>
   </footer>
-
-</body> 

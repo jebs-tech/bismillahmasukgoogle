@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+
+<!-- Hero Section -->
+<section id="heroSection" class="relative min-h-screen flex items-center justify-center text-center bg-cover bg-center" 
+    style="background-image: url('{% static 'homepage.png' %}');">
+    
+    <!-- Overlay -->
+    <div class="absolute inset-0 bg-[#1e2c4f] opacity-70"></div>
+    
+    <!-- Hero Content -->
+    <div class="relative z-10 p-8 text-white max-w-4xl mx-auto">
+        <h1 class="text-4xl sm:text-5xl md:text-6xl font-extrabold leading-tight mb-4 animate-fade-in">
+            Dukung Tim Favoritmu,<br class="hidden sm:inline"> Pesan Tiket Sekarang!
+        </h1>
+        <p class="text-lg sm:text-xl md:text-2xl mb-10 opacity-90 font-light">
+            Satu-satunya portal resmi pembelian tiket pertandingan voli terbesar di Indonesia.
+        </p>
+        
+        <a href="#menuSection" class="inline-block bg-[#f6ca50] text-[#1e2c4f] font-bold py-3 px-10 rounded-full shadow-2xl hover:bg-yellow-400 transform hover:scale-105 transition duration-300 ease-in-out text-lg uppercase tracking-wider">
+            Pilih Menu Favoritmu
+        </a>
+    </div>
+</section>
+
+<!-- Menu Section -->
+<section id="menuSection" class="bg-gray-50 py-16 sm:py-20 md:py-24">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <!-- Section Title -->
+        <div class="text-center mb-10 sm:mb-12">
+            <h2 class="text-3xl sm:text-4xl font-bold text-gray-800">Layanan Utama Kami</h2>
+        </div>
+
+        <!-- Menu Cards Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+            
+            <!-- Card 1: Daftar Pertandingan -->
+            <div class="bg-white rounded-xl shadow-lg p-8 hover:shadow-2xl transition duration-300 transform hover:-translate-y-2">
+                <a href="#" class="flex flex-col items-center justify-center text-center h-full">
+                    <span class="text-6xl mb-4">📅</span>
+                    <span class="text-xl font-bold text-gray-800 mb-2">Daftar Pertandingan</span>
+                    <span class="text-sm text-gray-600">Jadwal & Tiket Pertandingan</span>
+                </a>
+            </div>
+
+            <!-- Card 2: Forum Penggemar -->
+            <div class="bg-white rounded-xl shadow-lg p-8 hover:shadow-2xl transition duration-300 transform hover:-translate-y-2">
+                <a href="#" class="flex flex-col items-center justify-center text-center h-full">
+                    <span class="text-6xl mb-4">💬</span>
+                    <span class="text-xl font-bold text-gray-800 mb-2">Forum Penggemar</span>
+                    <span class="text-sm text-gray-600">Diskusi & Komunitas</span>
+                </a>
+            </div>
+
+            <!-- Card 3: Riwayat Tiket -->
+            <div class="bg-white rounded-xl shadow-lg p-8 hover:shadow-2xl transition duration-300 transform hover:-translate-y-2">
+                <a href="{% url 'user:profile' %}?tab=purchase_history"  class="flex flex-col items-center justify-center text-center h-full">
+                    <span class="text-6xl mb-4">🎫</span>
+                    <span class="text-xl font-bold text-gray-800 mb-2">Riwayat Tiket</span>
+                    <span class="text-sm text-gray-600">Histori Pembelian Tiket</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+<!-- Custom CSS untuk animasi -->
+<style>
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .animate-fade-in {
+        animation: fadeIn 1s ease-out;
+    }
+</style>
+
+{% endblock %}
