@@ -266,7 +266,7 @@ def match_create(request):
     else:
         form = MatchForm()
     
-    return render(request, 'match_form.html', {'form': form})
+    return render(request, 'matches/match_form.html', {'form': form, 'is_edit': False})
 
 @login_required
 @user_passes_test(is_staff)
@@ -292,7 +292,7 @@ def match_edit(request, pk):
     else:
         form = MatchForm(instance=match)
     
-    return render(request, 'match_form.html', {'form': form})
+    return render(request, 'matches/match_form.html', {'form': form, 'is_edit': True})
 
 @login_required
 @user_passes_test(is_staff)
