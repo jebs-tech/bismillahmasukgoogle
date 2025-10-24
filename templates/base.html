@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,7 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SERVE.TIX</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{% static 'css/forums.css' %}">
+    <script src='https://kit.fontawesome.com/d74cb82a83.js' crossorigin='anonymous'></script>
     <script>
+        // Konfigurasi warna kustom Tailwind agar sesuai dengan gambar
         tailwind.config = {
             theme: {
                 extend: {
@@ -20,14 +24,16 @@
         }
     </script>
 </head>
-<body class="bg-gradient-to-t from-[#FFEDD5] to-[#FFB6C1] min-h-screen flex flex-col">
+<body class="bg-gradient-to-t from-[#FADF95] to-[#FFFFFF] min-h-screen flex flex-col">
 
     <nav class="bg-brand-dark-blue shadow-lg">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
-                <div class="flex-shrink-0 flex items-center">
-                    <a href="/" class="text-white text-2xl font-bold">SERVE.TIX</a>
-                </div>
+              <div class="flex items-center">
+                <h1 class="text-xl sm:text-2xl font-bold">
+                  <span class="text-white">SERVE.</span><span class="text-yellow-300">TIX</span>
+              </h1>
+              </div>
                 
                 <div class="flex items-center">
                     {% if user.is_authenticated %}
@@ -54,3 +60,5 @@
 
 </body>
 </html>
+
+

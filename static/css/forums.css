@@ -1,0 +1,252 @@
+/* ==========================================
+   FORUMS GENERAL STYLE (SERVE.TIX THEME)
+========================================== */
+
+body {
+  font-family: 'Poppins', sans-serif;
+}
+
+/* ========== THREAD CARD CONTAINER ========== */
+.box {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+
+.thread-body {
+  background-color: #fdf4d9;             /* Warna krem lembut */
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.15);
+  border-radius: 16px;
+  padding: 1.5rem 2rem;
+  width: 100%;
+  max-width: 900px;
+  transition: all 0.3s ease;
+  border-left: 6px solid #FFC107;       /* Brand gold highlight */
+}
+
+.thread-body:hover {
+  transform: translateY(-5px);
+  box-shadow: 0px 6px 14px rgba(0, 0, 0, 0.25);
+}
+
+/* ========== TITLE STYLE ========== */
+.thread-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #1a2a4b;                        /* brand-dark-blue */
+}
+
+.thread-title a {
+  text-decoration: none;
+}
+
+.thread-title a:hover {
+  color: #FFA043;                        /* brand-orange */
+}
+
+/* ========== CONTENT STYLE ========== */
+.thread-content {
+  font-size: 1rem;
+  color: #2d2d2d;
+  line-height: 1.5;
+}
+
+/* ========== META INFO ========== */
+.meta-info {
+  color: #555;
+  font-style: italic;
+}
+
+/* ========== VOTE BUTTONS ========== */
+.vote-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.vote-buttons button {
+  background-color: transparent;
+  border: none;
+  font-size: 1.4rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.vote-buttons button:hover {
+  transform: scale(1.25);
+}
+
+.btn-upvote-thread:hover {
+  color: #22c55e; /* green-500 */
+}
+
+.btn-downvote-thread:hover {
+  color: #ef4444; /* red-500 */
+}
+
+/* ========== THREAD SCORE TEXT ========== */
+#thread-list span[id^="thread-"][id$="-score"] {
+  font-weight: 600;
+  color: #1a2a4b;
+}
+
+
+/* === VOTE BUTTONS === */
+.vote-buttons button {
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  margin-right: 6px;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.vote-buttons button:hover {
+  transform: scale(1.1);
+}
+
+.vote-buttons span {
+  font-weight: 600;
+  color: #1a2a4b;
+}
+
+/* === BUTTON STYLE === */
+.btn-edit, .btn-delete {
+  border: none;
+  background-color: #e4c480;
+  color: white;
+  border-radius: 5px;
+  padding: 4px 10px;
+  margin-right: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-edit:hover, .btn-delete:hover {
+  background-color: #7a5c1c;
+}
+
+.btn-edit-thread, .btn-delete-thread {
+  border: none;
+  background-color: #e4c480;
+  color: white;
+  border-radius: 5px;
+  padding: 4px 10px;
+  margin-right: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-edit-thread:hover, .btn-delete-thread:hover {
+  background-color: #7a5c1c;
+}
+
+/* ==========================================
+   REPLY BOX STYLE (MINI VERSION OF THREAD)
+========================================== */
+
+.reply-box {
+  background-color: #fffaf0;               /* Warna krem lebih terang */
+  border-left: 5px solid #ffc107;          /* Aksen brand gold */
+  border-radius: 10px;
+  padding: 1rem 1.5rem;
+  margin-top: 1rem;
+  margin-left: 2rem;                      /* sedikit masuk dari thread utama */
+  margin-right: 2rem;
+  box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.reply-box:hover {
+  transform: translateY(-3px);
+  box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.15);
+}
+
+/* ==== Reply Text ==== */
+.reply-content {
+  font-size: 1rem;
+  color: #333;
+  line-height: 1.6;
+}
+
+/* ==== Info Penulis ==== */
+.reply-box small {
+  color: #555;
+  font-style: italic;
+}
+
+/* ==== Voting Buttons ==== */
+.reply-box .vote-buttons button {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.reply-box .btn-upvote-reply:hover {
+  color: #22c55e; /* Hijau */
+  transform: scale(1.2);
+}
+
+.reply-box .btn-downvote-reply:hover {
+  color: #ef4444; /* Merah */
+  transform: scale(1.2);
+}
+
+.reply-box span[id^="reply-"][id$="-score"] {
+  font-weight: 600;
+  color: #1a2a4b;
+}
+
+/* ==== Edit & Delete Buttons ==== */
+.reply-box .btn-edit,
+.reply-box .btn-delete {
+  background-color: #e4c480;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.reply-box .btn-edit:hover,
+.reply-box .btn-delete:hover {
+  background-color: #e4c480;
+}
+
+/* === EDIT MODAL POPUP === */
+#editModal {
+  animation: fadeIn 0.2s ease;
+  backdrop-filter: blur(3px);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* === CONFIRM DELETE MODAL === */
+#confirmModal {
+  animation: fadeIn 0.2s ease;
+  backdrop-filter: blur(3px);
+}
+
+#confirmModal .bg-white {
+  animation: popUp 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes popUp {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+

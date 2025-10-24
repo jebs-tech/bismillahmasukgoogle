@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% load widget_tweaks %}
+
+{% block content %}
+<div class="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8">
+        <div class="bg-white shadow-xl rounded-lg p-8 sm:p-10">
+            
+            <h4 class="text-center text-2xl font-semibold text-gray-800 mb-8">
+                Masuk ke akun Anda
+            </h4>
+
+            {% if messages %}
+                {% for message in messages %}
+                <div class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded relative mb-4" role="alert">
+                    <span class="block sm:inline">{{ message }}</span>
+                </div>
+                {% endfor %}
+            {% endif %}
+
+            {% if form.errors %}
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                <span class="block sm:inline">Username atau password Anda salah.</span>
+            </div>
+            {% endif %}
+
+
+            <form class="space-y-6" method="post" action="{% url 'user:login' %}">
+                {% csrf_token %}
+
+                <div>
+                    <label for="{{ form.username.id_for_label }}" class="block text-sm font-bold text-gray-700">
+                        Alamat Email
+                    </label>
+                    <div class="mt-1">
+                        {% render_field form.username class="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-brand-orange focus:border-brand-orange sm:text-sm" placeholder="Email Anda" %}
+                    </div>
+                </div>
+
+                <div>
+                    <label for="{{ form.password.id_for_label }}" class="block text-sm font-bold text-gray-700">
+                        Kata Sandi
+                    </label>
+                    <div class="mt-1">
+                        {% render_field form.password class="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-brand-orange focus:border-brand-orange sm:text-sm" placeholder="Kata Sandi Anda" %}
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between text-sm mt-6">
+                    <div class="flex items-center">
+                        <input id="remember_me" name="remember_me" type="checkbox" class="h-4 w-4 text-brand-light-blue focus:ring-brand-light-blue border-gray-300 rounded">
+                        <label for="remember_me" class="ml-2 block text-gray-900">
+                            Ingat Saya
+                        </label>
+                    </div>
+
+                    <div class="font-medium">
+                      <a href="{% url 'user:password_reset' %}" class="text-brand-light-blue hover:text-blue-700">
+                          Lupa Kata Sandi?
+                      </a>
+                  </div>
+                </div>
+
+                <div class="pt-4">
+                    <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-base font-bold text-white bg-brand-orange hover:bg-orange-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-orange transition duration-150 ease-in-out">
+                        Masuk
+                    </button>
+                </div>
+
+                <div>
+                    <a href="{% url 'user:register' %}" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-base font-bold text-white bg-brand-light-blue hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-light-blue transition duration-150 ease-in-out">
+                        Daftar ServeTix
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
