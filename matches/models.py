@@ -13,6 +13,7 @@ class Team(models.Model):
 class Venue(models.Model):
     name = models.CharField(max_length=200)
     address = models.TextField(blank=True)
+    capacity = models.PositiveIntegerField(null=True, blank=True)
     def __str__(self): return self.name
 
 # Model Match (menggantikan user.Event)
@@ -52,9 +53,4 @@ class Seat(models.Model):
     class Meta: 
         unique_together = (('match', 'row', 'col'),)
 
-    def __str__(self): return f"{self.match.title} - {self.row}{self.col}"
-    
-    class Meta: 
-        unique_together = (('match', 'row', 'col'),)
-    
     def __str__(self): return f"{self.match.title} - {self.row}{self.col}"

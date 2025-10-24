@@ -27,6 +27,7 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('', include('matches.urls')),
     path('', include('homepage.urls')),
     # Semua URL 'payment/' akan ditangani oleh aplikasi payment
     path('payment/', include('payment.urls', namespace='payment')),

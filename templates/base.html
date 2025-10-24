@@ -12,7 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     
     <script src="https://unpkg.com/htmx.org@1.9.12" integrity="sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2" crossorigin="anonymous"></script>
-
+    <script src="https://kit.fontawesome.com/d74cb82a83.js" crossorigin="anonymous"></script>
     <script>
         // Konfigurasi warna kustom Tailwind agar sesuai
         tailwind.config = {
@@ -235,6 +235,117 @@
                 });
             });
         });
+
+        window.modalFormURL = null;
+
+function getCookie(name) {
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+        cookie = cookie.trim();
+        if (cookie.startsWith(name + '=')) {
+            return decodeURIComponent(cookie.substring(name.length + 1));
+        }
+    }
+    return null;
+}
+
+async function openDjangoFormModal(url) {
+    window.modalFormURL = url;
+    try {
+        const response = await fetch(url);
+        const html = await response.text();
+        
+        document.getElementById('modalContainer').innerHTML = `
+            <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4" onclick="if(event.target === this) closeModal()">
+                <div class="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+                    ${html}
+                </div>
+            </div>
+        `;
+    } catch (error) {
+        alert('Error loading form');
+        window.location.href = url;
+    }
+}
+
+function closeModal() {
+    document.getElementById('modalContainer').innerHTML = '';
+    window.modalFormURL = null;
+}
+
+async function deleteMatch(url, button) {
+    if (!confirm('Yakin hapus pertandingan?')) return;
+    
+    button.disabled = true;
+    button.textContent = 'Menghapus...';
+    
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            const card = button.closest('.bg-\\[linear-gradient\\]');
+            card?.remove();
+            window.location.reload();
+        } else {
+            alert('Gagal menghapus');
+        }
+    } catch (error) {
+        alert('Network error');
+    } finally {
+        button.disabled = false;
+        button.textContent = 'Delete';
+    }
+}
+
+window.handleFormSubmit = async function(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    const submitBtn = form.querySelector('button[type="submit"]');
+    
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Menyimpan...';
+    
+    try {
+        const response = await fetch(window.modalFormURL, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+            }
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            closeModal();
+            window.location.reload();
+        } else {
+            alert('Error: ' + JSON.stringify(data.errors));
+        }
+    } catch (error) {
+        alert('Network error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Simpan';
+    }
+};
+
+window.setupModalForm = function() {
+    const form = document.getElementById('modalForm');
+    if (form) form.onsubmit = window.handleFormSubmit;
+};
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeModal();
+});
 </script>
 
 <footer class="bg-blue-950 text-white py-6 sm:py-8">
