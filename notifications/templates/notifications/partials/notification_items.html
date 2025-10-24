@@ -1,0 +1,25 @@
+{# notifications/partials/notification_items.html #}
+{% load tz %}
+
+<div class="notif-list divide-y divide-[#f6ca50]/30 bg-[#fdf4d9] rounded-lg shadow-md overflow-hidden">
+  {% for n in notifications %}
+    <div class="notif-item px-4 py-3 flex justify-between items-start hover:bg-[#fff8de] transition-all duration-150">
+      <div class="flex-1">
+        <p class="text-sm text-[#1e2c4f] font-medium leading-snug">
+          {{ n.message }}
+        </p>
+        <p class="text-xs text-gray-600 mt-1">
+          {{ n.created_at|localtime|date:"d M Y, H:i" }}
+        </p>
+      </div>
+
+      {% if not n.is_read %}
+        <span class="ml-3 mt-1 flex-shrink-0 w-2.5 h-2.5 bg-[#f6ca50] rounded-full" title="Belum dibaca"></span>
+      {% endif %}
+    </div>
+  {% empty %}
+    <div class="p-4 text-sm text-[#1e2c4f]/60 italic text-center">
+      Tidak ada notifikasi baru.
+    </div>
+  {% endfor %}
+</div>

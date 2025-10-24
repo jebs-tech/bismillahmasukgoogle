@@ -1,0 +1,95 @@
+{% load static %}
+
+{% if matches %}
+<div class="space-y-4">
+    {% for match in matches %}
+    <!-- MOBILE VERSION -->
+    <div class="bg-[linear-gradient(90deg,#F6CA50_27%,#F9DD8D_67%,#FADF95_74%,#FDF4D9_100%)] rounded-lg p-4 shadow-md hover:shadow-lg transition duration-200 block sm:hidden">
+        <div class="flex justify-center items-center gap-4 mb-4">
+            <img src="{% static 'images/default_team.png' %}" alt="{{ match.home_team.name }}" class="w-12 h-12 object-contain">
+            <span class="text-lg font-bold text-gray-600">VS</span>
+            <img src="{% static 'images/default_team.png' %}" alt="{{ match.away_team.name }}" class="w-12 h-12 object-contain">
+        </div>
+        
+        <div class="text-center mb-3">
+            <div class="flex justify-center items-center gap-3">
+                <span class="font-semibold text-gray-800">{{ match.home_team.name }}</span>
+                <span class="text-lg font-bold text-gray-600">VS</span>
+                <span class="font-semibold text-gray-800">{{ match.away_team.name }}</span>
+            </div>
+        </div>
+        
+        <div class="text-center text-sm text-gray-600 mb-4">
+            <div class="flex flex-col gap-1">
+                <span>📅 {{ match.start_time|date:"d F Y, H:i" }}</span>
+                <span>📍 {{ match.venue.name|default:"Venue TBA" }}</span>
+            </div>
+        </div>
+        
+        <div class="flex flex-col gap-2">
+            <a href="#" class="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 font-medium transition duration-200 text-center">
+                BOOK NOW!
+            </a>
+            
+            {% if user.is_staff %}
+            <div class="flex gap-2 justify-center">
+                <button onclick="openDjangoFormModal('{% url 'match_edit' match.pk %}')" class="bg-blue-500 text-white px-3 py-2 rounded hover:bg-blue-600 text-sm">
+                    Edit
+                </button>
+                <button onclick="deleteMatch('{% url 'match_delete' match.pk %}', this)" class="bg-red-500 text-white px-3 py-2 rounded hover:bg-red-600 text-sm">
+                    Delete
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- DESKTOP VERSION -->
+    <div class="bg-[linear-gradient(90deg,#F6CA50_27%,#F9DD8D_67%,#FADF95_74%,#FDF4D9_100%)] rounded-lg p-4 sm:p-6 shadow-md hover:shadow-lg transition duration-200 hidden sm:block">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div class="flex-1 flex items-center gap-6">
+                <div class="flex items-center gap-3">
+                    <img src="{% static 'images/default_team.png' %}" alt="{{ match.home_team.name }}" class="w-12 h-12 object-contain">
+                    <span class="text-lg font-bold text-gray-600">VS</span>
+                    <img src="{% static 'images/default_team.png' %}" alt="{{ match.away_team.name }}" class="w-12 h-12 object-contain">
+                </div>
+                
+                <div class="flex-1">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="font-semibold text-gray-800">{{ match.home_team.name }}</span>
+                        <span class="text-lg font-bold text-gray-600">VS</span>
+                        <span class="font-semibold text-gray-800">{{ match.away_team.name }}</span>
+                    </div>
+                    
+                    <div class="flex gap-4 text-sm text-gray-600">
+                        <span>📅 {{ match.start_time|date:"d F Y, H:i" }}</span>
+                        <span>📍 {{ match.venue.name|default:"Venue TBA" }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row gap-2 items-end">
+                <a href="#" class="bg-orange-500 text-white px-4 sm:px-12 py-2 sm:py-1 rounded-lg hover:bg-orange-600 font-medium transition duration-200 flex items-center justify-between min-w-[160px] sm:min-w-[180px] flex-shrink-0">
+                    <span>BOOK NOW!</span>
+                </a>
+                {% if user.is_staff %}
+                <div class="flex gap-2">
+                    <button onclick="openDjangoFormModal('{% url 'match_edit' match.pk %}')" class="bg-blue-700 text-white px-3 py-2 rounded hover:bg-blue-600 text-sm">
+                        Edit
+                    </button>
+                    <button onclick="deleteMatch('{% url 'match_delete' match.pk %}', this)" class="bg-red-700 text-white px-3 py-2 rounded hover:bg-red-600 text-sm">
+                        Delete
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-12">
+    <img src="{% static 'images/empty.png' %}" class="mx-auto w-24 h-24 mb-4 object-contain" alt="No matches">
+    <p class="text-gray-500 text-lg">Tidak ada pertandingan.</p>
+</div>
+{% endif %}

@@ -1,0 +1,51 @@
+<div class="p-6">
+    <h2 class="text-2xl font-bold text-gray-800 mb-4">Hapus Pertandingan</h2>
+    <p class="text-gray-600 mb-2">Apakah Anda yakin ingin menghapus:</p>
+    <p class="text-lg font-semibold text-gray-800 mb-6">{{ match.home_team }} vs {{ match.away_team }}</p>
+    
+    <form method="post" id="deleteForm">
+        {% csrf_token %}
+        <div class="flex gap-4">
+            <button type="button" onclick="handleDelete()" class="bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600 font-medium">
+                Ya, Hapus
+            </button>
+            <button type="button" onclick="closeModal()" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 font-medium">
+                Batal
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+async function handleDelete() {
+    console.log('🗑️🗑️🗑️ DELETE DITANGKAP!');
+    
+    const form = document.getElementById('deleteForm');
+    const formData = new FormData(form);
+    
+    try {
+        const response = await fetch(window.modalFormURL, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+            }
+        });
+        
+        const data = await response.json();
+        console.log('📥 Response delete:', data);
+        
+        if (data.success) {
+            console.log('✅✅✅ DELETE BERHASIL!');
+            closeModal();
+            window.location.reload();
+        } else {
+            alert('Gagal menghapus pertandingan');
+        }
+    } catch (error) {
+        console.error('❌❌❌ DELETE ERROR:', error);
+        alert('Error: ' + error.message);
+    }
+}
+</script>

@@ -1,64 +1,225 @@
-{% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id" class="scroll-smooth"> 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SERVE.TIX</title>
+    <title>{% block title %}SERVE.TIX{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="{% static 'css/forums.css' %}">
-    <script src='https://kit.fontawesome.com/d74cb82a83.js' crossorigin='anonymous'></script>
-    <script>
-        // Konfigurasi warna kustom Tailwind agar sesuai dengan gambar
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'brand-dark-blue': '#1a2a4b',
-                        'brand-gold': '#FFC107',
-                        'brand-orange': '#FFA043',
-                        'brand-light-blue': '#4A69BD',
-                    }
-                }
-            }
-        }
-    </script>
-</head>
-<body class="bg-gradient-to-t from-[#FADF95] to-[#FFFFFF] min-h-screen flex flex-col">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 
-    <nav class="bg-brand-dark-blue shadow-lg">
+    <style>
+        body {
+            font-family: 'DM Sans', sans-serif;
+        }
+        .logo-text {
+            font-family: 'Roboto', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    
+    <!-- Navbar -->
+    <nav class="bg-[#1e2c4f] shadow-lg fixed w-full z-50 top-0">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-              <div class="flex items-center">
-                <h1 class="text-xl sm:text-2xl font-bold">
-                  <span class="text-white">SERVE.</span><span class="text-yellow-300">TIX</span>
-              </h1>
-              </div>
-                
+            <div class="flex justify-between items-center h-20">
+                <!-- Logo -->
                 <div class="flex items-center">
-                    {% if user.is_authenticated %}
-                        <a href="{% url 'user:profile' %}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
-                            Profil ({{ user.username }})
-                        </a>
-                        <a href="{% url 'user:logout' %}" class="ml-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-brand-dark-blue bg-gray-200 hover:bg-white">
-                            Logout
-                        </a>
-                    {% else %}
-                        <a href="{% url 'user:login' %}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-brand-dark-blue bg-brand-gold hover:bg-yellow-300 font-bold">
-                            Masuk
-                        </a>
-                    {% endif %}
+                    <h1 class="text-2xl sm:text-3xl font-bold logo-text leading-tight tracking-tight">
+                        <span class="text-[#fdf4d9]">SERVE</span><span class="text-white">.</span><span class="text-[#f6ca50]">TIX</span>
+                    </h1>
+                </div>
+                
+                <!-- Login / Profile -->
+                <div class="flex items-center space-x-5">
+                {% if user.is_authenticated %}
+                    <!-- Profil -->
+                    <a href="{% url 'user:profile' %}" class="text-gray-200 hover:text-white font-medium">
+                        Profil ({{ user.username }})
+                    </a>
+
+                    <!-- 🔔 Notification Bell -->
+                    <div class="relative">
+                        <button id="notifButton" 
+                                class="relative flex items-center justify-center w-11 h-11 rounded-full bg-[#fdf4d9]/10 hover:bg-[#fdf4d9]/20 transition duration-200 shadow-sm"
+                                aria-label="Notifikasi">
+                            <svg class="w-6 h-6 text-[#fdf4d9]" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10 2a6 6 0 00-6 6v2.586l-.707.707A1 1 0 004 13h12a1 1 0 00.707-1.707L16 10.586V8a6 6 0 00-6-6z"></path>
+                            </svg>
+                            <span id="notif-badge" 
+                                    class="absolute -top-1 -right-1 bg-[#f6ca50] text-[#1e2c4f] text-xs font-semibold rounded-full px-1.5 py-0.5 hidden shadow-md">
+                                    0
+                            </span>
+                        </button>
+
+                        <!-- Dropdown -->
+                        <div id="notifDropdown" 
+                            class="hidden absolute right-0 mt-3 w-80 bg-[#fdf4d9] rounded-xl shadow-xl border border-[#f6ca50]/50 overflow-hidden z-50 animate-fadeIn">
+                            <div class="p-3 border-b border-[#f6ca50]/40 flex justify-between items-center bg-[#f6ca50]/10">
+                                <span class="text-[#1e2c4f] font-semibold text-sm">Notifikasi</span>
+                                <button id="markAllReadBtn" class="text-xs text-[#1e2c4f]/70 hover:text-[#1e2c4f] transition">Tandai semua baca</button>
+                            </div>
+                            <div id="notifDropdownContent" class="max-h-64 overflow-auto">
+                                <div class="p-3 text-gray-600 text-sm">Memuat...</div>
+                            </div>
+                            <div class="p-2 text-center border-t border-[#f6ca50]/40 bg-[#fffaf0]">
+                                <a href="{% url 'notification_list' %}" class="text-sm text-[#f6ca50] font-medium hover:underline">
+                                    Lihat semua notifikasi
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Logout -->
+                    <a href="{% url 'user:logout' %}" 
+                        class="bg-[#f6ca50] text-[#1e2c4f] px-5 py-2.5 rounded-full hover:bg-yellow-400 font-semibold transition duration-200 text-base inline-flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1m0-9V5m0 14a2 2 0 002 2h3a2 2 0 002-2V5a2 2 0 00-2-2h-3a2 2 0 00-2 2v1" />
+                        </svg>
+                        Logout
+                    </a>
+                {% else %}
+                    <a href="#" 
+                        class="bg-[#f6ca50] text-[#1e2c4f] px-6 py-2.5 rounded-full hover:bg-yellow-400 font-semibold transition duration-200 text-base inline-flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 3a3 3 0 110 6 3 3 0 010-6zm0 14.2a7.22 7.22 0 01-6-3.22c.03-2 4-3.08 6-3.08s5.97 1.08 6 3.08a7.22 7.22 0 01-6 3.22z"/>
+                        </svg>
+                        Masuk
+                    </a>
+                {% endif %}
                 </div>
             </div>
         </div>
     </nav>
 
-    <main class="flex-grow">
+    <!-- Page Content -->
+    <div class="pt-20">
         {% block content %}
         {% endblock %}
-    </main>
+    </div>
 
+    <!-- Smooth Scroll -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    const href = this.getAttribute('href');
+                    if (href === '#') return; // skip dummy link
+                    e.preventDefault();
+                    const target = document.querySelector(href);
+                    if (target) {
+                        const offsetTop = target.offsetTop - 80;
+                        window.scrollTo({ top: offsetTop, behavior: 'smooth' });
+                    }
+                });
+            });
+        });
+    </script>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-6 right-6 z-[60] space-y-2"></div>
+    <script>
+        function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            for (let cookie of document.cookie.split(';')) {
+            cookie = cookie.trim();
+            if (cookie.startsWith(name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+            }
+        }
+        return cookieValue;
+        }
+        const csrftoken = getCookie('csrftoken');
+
+        document.addEventListener('DOMContentLoaded', function() {
+        const badge = document.getElementById('notif-badge');
+        const dropdown = document.getElementById('notifDropdown');
+        const dropdownContent = document.getElementById('notifDropdownContent');
+        const notifButton = document.getElementById('notifButton');
+        const markAllReadBtn = document.getElementById('markAllReadBtn');
+        const toastContainer = document.getElementById('toast-container');
+
+        // === Toggle dropdown ===
+        notifButton?.addEventListener('click', function(e) {
+            e.stopPropagation();
+            dropdown.classList.toggle('hidden');
+            if (!dropdown.classList.contains('hidden')) fetchUnreadAndRender();
+        });
+        document.addEventListener('click', e => {
+            if (!e.target.closest('#notifDropdown') && !e.target.closest('#notifButton')) {
+            dropdown.classList.add('hidden');
+            }
+        });
+
+        // === Mark all read ===
+        markAllReadBtn?.addEventListener('click', function(e) {
+            e.preventDefault();
+            fetch("{% url 'notification_mark_all_read' %}", {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrftoken }
+            })
+            .then(r => r.json())
+            .then(data => {
+            if (data.success) {
+                badge.classList.add('hidden');
+                dropdownContent.innerHTML = '<div class="p-3 text-[#1e2c4f]/70 text-sm italic">Semua notifikasi sudah dibaca.</div>';
+            }
+            });
+        });
+
+        // === Poll unread count ===
+        let lastUnread = null;
+        function fetchUnreadAndRender() {
+            fetch("{% url 'notification_unread_count' %}")
+            .then(r => r.json())
+            .then(data => {
+                const count = data.unread_count || 0;
+                // badge update
+                if (count > 0) {
+                badge.textContent = count;
+                badge.classList.remove('hidden');
+                } else {
+                badge.classList.add('hidden');
+                }
+                // isi dropdown
+                if (!dropdown.classList.contains('hidden')) dropdownContent.innerHTML = data.html;
+                // toast muncul kalau ada notif baru
+                if (lastUnread !== null && count > lastUnread) {
+                showToast(`🔔 Kamu punya ${count - (lastUnread||0)} notifikasi baru`);
+                }
+                lastUnread = count;
+            })
+            .catch(() => {});
+        }
+
+        // === Floating toast ===
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = "bg-[#fdf4d9] border-l-4 border-[#f6ca50] text-[#1e2c4f] px-5 py-3 rounded-lg shadow-md font-medium animate-slideUp";
+            toast.textContent = message;
+            toastContainer.appendChild(toast);
+            setTimeout(() => toast.classList.add('fade-out'), 3000);
+            setTimeout(() => toast.remove(), 3500);
+        }
+
+        // initial + interval
+        fetchUnreadAndRender();
+        setInterval(fetchUnreadAndRender, 30000);
+        });
+        </script>
+
+        <style>
+        @keyframes slideUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slideUp { animation: slideUp 0.4s ease-out; }
+        .fade-out { opacity: 0; transform: translateY(10px); transition: all .5s ease; }
+        </style>
 </body>
 </html>
-
 
