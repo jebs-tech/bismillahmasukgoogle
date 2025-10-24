@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'forums',
     'user',
     'widget_tweaks',
+    'notifications',
 ]
 
 MIDDLEWARE = [
