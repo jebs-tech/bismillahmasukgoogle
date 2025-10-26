@@ -8,7 +8,7 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         # Tentukan path ke file CSV Anda
         # (Asumsikan Anda meletakkan 'daftar_tim.csv' di root proyek, sejajar 'manage.py')
-        csv_file_path = 'static/csv/nama_tim.csv'
+        csv_file_path = 'staticfiles/csv/nama_tim.csv'
 
         try:
             with open(csv_file_path, mode='r', encoding='utf-8') as file:

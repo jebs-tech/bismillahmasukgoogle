@@ -9,7 +9,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         # Asumsi file CSV diletakkan di root proyek
-        csv_file_path = 'static/csv/lapangan.csv'
+        csv_file_path = 'staticfiles/csv/lapangan.csv'
 
         if not os.path.exists(csv_file_path):
             # Menggunakan pesan error yang jelas jika file tidak ada
