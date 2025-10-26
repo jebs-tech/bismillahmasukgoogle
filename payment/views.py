@@ -7,7 +7,7 @@ import random
 from django.conf import settings
 from io import BytesIO
 from django.core.files.base import ContentFile
-import qrcode
+import qr_code as qrcode
 from django.core.mail import EmailMessage
 from django.db import transaction
 from .models import Pembelian
