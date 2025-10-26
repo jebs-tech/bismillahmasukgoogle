@@ -7,4 +7,5 @@ urllib3
 python-dotenv
 django-widget-tweaks
 apscheduler
-qrcode[pil]
+django-qr-code
+Pillow
