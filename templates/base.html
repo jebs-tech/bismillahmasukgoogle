@@ -64,7 +64,12 @@
                 </div>
                 
                 <div class="flex items-center space-x-6">
-
+                    {% if user.is_staff %}
+                    <button onclick="openDjangoFormModal('{% url 'matches:match_create' %}')" 
+                            class="bg-[#f6ca50] text-[#1e2c4f] px-4 py-2 rounded-lg hover:bg-yellow-400 font-medium text-sm sm:text-base">
+                        Tambah Pertandingan
+                    </button>
+                    {% endif %}
 
                     {% if user.is_authenticated %}
                     <div class="relative">
@@ -158,6 +163,8 @@
         </div>
     </div>
 
+    <div id="modalContainer"></div>
+
 
 <script>
     // --- VARIABEL DAN KONSTANTA ---
@@ -172,12 +179,21 @@
 
     // --- FUNGSI MODAL TENGAH (QR CODE) ---
     function closeModal() {
+    try {
+        // Coba close modal matches dulu
+        document.getElementById('modalContainer').innerHTML = '';
+        window.modalFormURL = null;
+    } catch(e) {}
+    
+    try {
+        // Coba close modal baru
         const modalContent = document.getElementById('modal-content');
         modalContent.classList.remove('scale-100', 'opacity-100');
         modalContent.classList.add('scale-95', 'opacity-0');
         backdrop.classList.add('hidden');
         document.body.classList.remove('overflow-hidden');
-    }
+    } catch(e) {}
+}
 
     
     
