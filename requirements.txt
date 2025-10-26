@@ -8,3 +8,4 @@ python-dotenv
 django-widget-tweaks
 apscheduler
 django-qr-code
+Pillow
