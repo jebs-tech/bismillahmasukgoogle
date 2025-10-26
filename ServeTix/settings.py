@@ -51,7 +51,7 @@ INSTALLED_APPS = [
     'forums',    
     'notifications',
     'apscheduler',
-    'qrcode'
+    'qr_code',
 ]
 
 MIDDLEWARE = [
