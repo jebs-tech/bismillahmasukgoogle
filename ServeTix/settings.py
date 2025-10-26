@@ -33,7 +33,7 @@ DEBUG = True
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "jenisa-bunga-servetix.pbp.cs.ui.ac.id"]
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://jenisa-bunga-servetix.pbp.cs.ui.ac.id/"
+    "https://jenisa-bunga-servetix.pbp.cs.ui.ac.id",
 ]
 
 # Application definition
@@ -151,7 +151,7 @@ USE_TZ = True
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 
 if DEBUG:
     STATICFILES_DIRS = [
