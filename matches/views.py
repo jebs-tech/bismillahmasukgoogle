@@ -63,187 +63,6 @@ def match_detail(request, pk):
     })
 
 
-def match_seats_api(request, pk):
-    match = get_object_or_404(Match, pk=pk)
-    seats = match.seats.select_related('category').all()
-    data = []
-    for s in seats:
-        data.append({
-            'id': s.id,
-            'label': f"{s.row}{s.col}",
-            'row': s.row,
-            'col': s.col,
-            'category': s.category.name,
-            'price': s.category.price,
-            'color': s.category.color,
-            'is_booked': s.is_booked,
-        })
-    return JsonResponse({'seats': data})
-
-
-# Di matches/views.py
-
-@csrf_exempt
-def api_book(request):
-    if request.method != 'POST':
-        return HttpResponseBadRequest('POST required')
-    try:
-        payload = json.loads(request.body.decode())
-    except Exception:
-        return HttpResponseBadRequest('Invalid JSON')
-
-    match_id = payload.get('match_id')
-    seat_ids = payload.get('seat_ids', [])
-    # Hapus passengers dari sini. Logika ini seharusnya di checkout page.
-
-    # Ganti buyer_name/email dengan data user jika sudah login (best practice)
-    user = request.user if request.user.is_authenticated else None
-    
-    # Ambil nama/email dari payload jika user anonim, atau dari objek user jika login
-    # Asumsi buyer_name dan buyer_email dikirim dari frontend jika user anonim
-    buyer_name = payload.get('buyer_name')
-    buyer_email = payload.get('buyer_email')
-
-    if not (match_id and seat_ids):
-        return HttpResponseBadRequest('Missing required fields: match_id, seat_ids')
-
-    # Validasi user dan info pembeli
-    if user:
-        buyer_name = user.profile.nama_lengkap if hasattr(user, 'profile') else user.username
-        buyer_email = user.email
-    elif not (buyer_name and buyer_email):
-        return HttpResponseBadRequest('Missing buyer name or email for anonymous user.')
-
-    with transaction.atomic():
-        seats_qs = Seat.objects.select_for_update().filter(id__in=seat_ids, is_booked=False).select_related('category')
-        seats = list(seats_qs)
-        if len(seats) != len(seat_ids):
-            return JsonResponse({'ok': False, 'msg': 'Beberapa kursi sudah terisi atau tidak valid.'}, status=400)
-
-        # Hitung Total Harga
-        total = sum(s.category.price for s in seats)
-        
-        # --- GANTI Booking.objects.create MENJADI Pembelian.objects.create ---
-        pembelian = Pembelian.objects.create(
-            user=user,
-            match_id=match_id,
-            nama_lengkap_pembeli=buyer_name,
-            email=buyer_email or '',
-            total_price=total,
-            status='PENDING'
-        )
-        pembelian.seats.add(*seats)
-        Seat.objects.filter(id__in=[s.id for s in seats]).update(is_booked=True)
-
-    return JsonResponse({
-        'ok': True,
-        'order_id': pembelian.order_id,
-        'total_price': total,
-        'seat_labels': [f"{s.row}{s.col}" for s in seats]
-    })
-
-# Di matches/views.py
-
-@csrf_exempt
-def api_book_quantity(request):
-    if request.method != 'POST':
-        return HttpResponseBadRequest('POST required')
-    try:
-        payload = json.loads(request.body.decode())
-    except Exception:
-        return HttpResponseBadRequest('Invalid JSON')
-
-    match_id = payload.get('match_id')
-    # Hapus passengers dari sini. Logika ini seharusnya di checkout page.
-    
-    quantity = int(payload.get('quantity') or 0)
-    top_category_name = payload.get('category_name')
-
-    # Validasi user dan info pembeli (Sama seperti api_book)
-    user = request.user if request.user.is_authenticated else None
-    buyer_name = payload.get('buyer_name')
-    buyer_email = payload.get('buyer_email')
-
-    if not (match_id and quantity and top_category_name):
-        return HttpResponseBadRequest('Missing fields: match_id, quantity, or category_name')
-    
-    if user:
-        buyer_name = user.profile.nama_lengkap if hasattr(user, 'profile') else user.username
-        buyer_email = user.email
-    elif not (buyer_name and buyer_email):
-        return HttpResponseBadRequest('Missing buyer name or email for anonymous user.')
-    
-    # Ambil Kategori
-    try:
-        top_category = SeatCategory.objects.get(name__iexact=top_category_name)
-    except SeatCategory.DoesNotExist:
-        return JsonResponse({'ok': False, 'msg': 'Kategori kursi tidak ditemukan.'}, status=404)
-
-
-    with transaction.atomic():
-        # Cari dan Kunci Kursi Tersedia
-        seats_qs = Seat.objects.select_for_update().filter(
-            match_id=match_id,
-            category=top_category,
-            is_booked=False
-        ).order_by('id')[:quantity]
-        
-        seats = list(seats_qs)
-        if len(seats) != quantity:
-            return JsonResponse({'ok': False, 'msg': f'Tidak cukup kursi tersedia di kategori {top_category.name} (minta {quantity}, tersedia {len(seats)})'}, status=400)
-            
-        # Hitung Total Harga
-        total = sum(s.category.price for s in seats)
-        
-        # --- GANTI Booking.objects.create MENJADI Pembelian.objects.create ---
-        pembelian = Pembelian.objects.create(
-            user=user,
-            match_id=match_id,
-            nama_lengkap_pembeli=buyer_name,
-            email=buyer_email or '',
-            total_price=total,
-            status='PENDING'
-        )
-        pembelian.seats.add(*seats)
-        Seat.objects.filter(id__in=[s.id for s in seats]).update(is_booked=True)
-
-        assigned_seats = [{'seat_id': s.id, 'seat_label': f"{s.row}{s.col}"} for s in seats]
-
-    return JsonResponse({
-        'ok': True,
-        'order_id': pembelian.order_id,
-        'total_price': total,
-        'assigned_seats': assigned_seats,
-        'seat_labels': [s['seat_label'] for s in assigned_seats]
-    })
-
-
-def checkout(request, match_id):
-    match = get_object_or_404(Match, id=match_id)
-    seats_param = request.GET.get('seats', '')
-    seat_ids = []
-    if seats_param:
-        seat_ids = [int(s) for s in seats_param.split(',') if s.isdigit()]
-
-    # --- PERBAIKAN: HANYA AMBIL KATEGORI YANG SUDAH ADA ---
-    # Logika pembuatan kategori lama dihapus karena sudah dilakukan di admin/shell.
-    categories = SeatCategory.objects.all().order_by('price')
-
-    categories_data = [{'name': c.name, 'price': c.price, 'color': c.color, 'id': c.id} for c in categories]
-    # ----------------------------------------------------
-
-    # Anda mungkin ingin mengambil data kursi yang sudah dipilih untuk display
-    preselected_seats = Seat.objects.filter(id__in=seat_ids).select_related('category')
-
-    return render(request, 'matches/checkout.html', {
-        'match': match,
-        'preselected_seat_ids': seat_ids, # IDs kursi yang dipilih
-        'preselected_seats': preselected_seats, # Objek kursi yang dipilih
-        'categories': categories, # List objek kategori
-        'categories_data': categories_data, # List dict kategori (untuk JS)
-    })
-
-
 @login_required
 @user_passes_test(is_staff)
 def match_create(request):
@@ -266,7 +85,7 @@ def match_create(request):
     else:
         form = MatchForm()
     
-    return render(request, 'match_form.html', {'form': form})
+    return render(request, 'matches/match_form.html', {'form': form, 'is_edit': False})
 
 @login_required
 @user_passes_test(is_staff)
@@ -284,7 +103,7 @@ def match_edit(request, pk):
             
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
                 return JsonResponse({'success': True})
-            return redirect('match_list')
+            return redirect('matches:match_list')
         else:
             print(f"❌ Form validation errors: {form.errors}")
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
@@ -292,7 +111,7 @@ def match_edit(request, pk):
     else:
         form = MatchForm(instance=match)
     
-    return render(request, 'match_form.html', {'form': form})
+    return render(request, 'matches/match_form.html', {'form': form, 'is_edit': True})
 
 @login_required
 @user_passes_test(is_staff)
@@ -306,7 +125,7 @@ def match_delete(request, pk):
         
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
             return JsonResponse({'success': True})
-        return redirect('match_list')
+        return redirect('matches:match_list')
     
     return render(request, 'match_delete.html', {'match': match})
 

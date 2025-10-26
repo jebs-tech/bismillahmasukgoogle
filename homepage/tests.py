@@ -1,19 +1,33 @@
 from django.test import TestCase
 from django.urls import reverse
-from django.utils import timezone
-from datetime import datetime
-from .models import Team, Venue, Match
 
-class SimpleTests(TestCase):
-    def setUp(self):
-        a = Team.objects.create(name='A')
-        b = Team.objects.create(name='B')
-        v = Venue.objects.create(name='V1')
-        Match.objects.create(home_team=a, away_team=b, venue=v, start_time=timezone.make_aware(datetime(2025,10,10,18,0)))
+class HomepageViewTests(TestCase):
+    def test_homepage_url_exists(self):
+        """Pastikan URL utama '/' bisa diakses"""
+        response = self.client.get('/')
+        self.assertEqual(response.status_code, 200)
 
-    def test_search_oct(self):
-        url = reverse('servetix:match_search_json') + '?month=10&year=2025'
-        resp = self.client.get(url)
-        self.assertEqual(resp.status_code, 200)
-        data = resp.json()
-        self.assertIn('matches', data)
+    def test_homepage_url_name(self):
+        """Pastikan URL dengan name 'homepage:homepage' bisa diakses"""
+        url = reverse('homepage:homepage')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_homepage_uses_correct_template(self):
+        """Pastikan view menggunakan template 'homepage.html'"""
+        response = self.client.get(reverse('homepage:homepage'))
+        self.assertTemplateUsed(response, 'homepage.html')
+
+    def test_homepage_contains_main_content(self):
+        """Pastikan konten utama muncul di halaman"""
+        response = self.client.get(reverse('homepage:homepage'))
+        self.assertContains(response, "Dukung Tim Favoritmu")
+        self.assertContains(response, "Pesan Tiket Sekarang")
+        self.assertContains(response, "Layanan Utama Kami")
+
+    def test_homepage_links_work(self):
+        """Pastikan link ke halaman lain ada"""
+        response = self.client.get(reverse('homepage:homepage'))
+        self.assertContains(response, reverse('matches:match_list'))
+        self.assertContains(response, reverse('forums:thread_list'))
+        self.assertContains(response, reverse('user:profile'))

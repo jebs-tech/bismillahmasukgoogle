@@ -1,49 +1,63 @@
-from django.test import TestCase
+from django.test import TestCase, Client
+from django.urls import reverse
 from django.contrib.auth.models import User
-from django.utils import timezone
-from datetime import timedelta
-from matches.models import Team, Venue, Match
 from notifications.models import Notification
-from notifications.scheduler import check_upcoming_matches
 
-class NotificationTests(TestCase):
-
+class NotificationViewsTest(TestCase):
     def setUp(self):
-        """Setup tim, venue, dan user untuk notifikasi."""
-        self.user = User.objects.create_user(username="fariz", password="12345")
-        self.team1 = Team.objects.create(name="Persija")
-        self.team2 = Team.objects.create(name="Persib")
-        self.venue = Venue.objects.create(name="Stadion Utama GBK")
-        self.match = Match.objects.create(
-            home_team=self.team1,
-            away_team=self.team2,
-            start_time=timezone.now() + timedelta(days=1),
-            venue=self.venue
+        self.client = Client()
+        self.user = User.objects.create_user(username='bunga', password='testpass123')
+        self.notification1 = Notification.objects.create(
+            user=self.user,
+            message='Notif 1',
+            is_read=False
+        )
+        self.notification2 = Notification.objects.create(
+            user=self.user,
+            message='Notif 2',
+            is_read=True
         )
 
-    def test_create_notification(self):
-        """Pastikan notifikasi bisa dibuat."""
-        notif = Notification.objects.create(user=self.user, message="Tes notifikasi pertandingan")
-        self.assertEqual(str(notif), "Tes notifikasi pertandingan")
-        self.assertFalse(notif.is_read)
+    def test_notification_list_requires_login(self):
+        response = self.client.get(reverse('notifications:notification_list'))
+        self.assertEqual(response.status_code, 302)  # redirect to login
 
-    def test_upcoming_match_creates_notification(self):
-        """Tes job APScheduler: harus buat notifikasi 1 hari sebelum pertandingan."""
-        self.assertEqual(Notification.objects.count(), 0)
-        check_upcoming_matches()  # panggil fungsi langsung
-        self.assertEqual(Notification.objects.count(), 1)
-        notif = Notification.objects.first()
-        self.assertIn("Persija vs Persib", notif.message)
+    def test_notification_list_authenticated(self):
+        self.client.login(username='bunga', password='testpass123')
+        response = self.client.get(reverse('notifications:notification_list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'notifications/list.html')
+        # Setelah view diakses, semua unread harus jadi read
+        self.notification1.refresh_from_db()
+        self.assertTrue(self.notification1.is_read)
 
-    def test_mark_notification_as_read(self):
-        """Pastikan notifikasi bisa ditandai sebagai sudah dibaca."""
-        notif = Notification.objects.create(user=self.user, message="Baru nih notif")
-        notif.mark_as_read()
-        notif.refresh_from_db()
-        self.assertTrue(notif.is_read)
+    def test_unread_count_api_get_success(self):
+        self.client.login(username='bunga', password='testpass123')
+        # buat notifikasi unread baru
+        Notification.objects.create(user=self.user, message='Baru', is_read=False)
+        response = self.client.get(reverse('notifications:notification_unread_count'))
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn('unread_count', data)
+        self.assertIn('html', data)
+        self.assertGreaterEqual(data['unread_count'], 1)
 
-    def test_multiple_notifications_for_same_match(self):
-        """Pastikan tidak duplikat notifikasi untuk pertandingan sama."""
-        check_upcoming_matches()
-        check_upcoming_matches()
-        self.assertEqual(Notification.objects.count(), 1)
+    def test_unread_count_api_rejects_non_get(self):
+        self.client.login(username='bunga', password='testpass123')
+        response = self.client.post(reverse('notifications:notification_unread_count'))
+        self.assertEqual(response.status_code, 403)
+
+    def test_mark_all_read_api_post_success(self):
+        self.client.login(username='bunga', password='testpass123')
+        Notification.objects.create(user=self.user, message='Unread', is_read=False)
+        response = self.client.post(reverse('notifications:notification_mark_all_read'))
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['success'])
+        unread_left = Notification.objects.filter(user=self.user, is_read=False).count()
+        self.assertEqual(unread_left, 0)
+
+    def test_mark_all_read_api_rejects_non_post(self):
+        self.client.login(username='bunga', password='testpass123')
+        response = self.client.get(reverse('notifications:notification_mark_all_read'))
+        self.assertEqual(response.status_code, 403)
