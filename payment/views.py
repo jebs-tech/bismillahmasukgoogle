@@ -7,7 +7,7 @@ import random
 from django.conf import settings
 from io import BytesIO
 from django.core.files.base import ContentFile
-import qr_code as qrcode
+import qrcode
 from django.core.mail import EmailMessage
 from django.db import transaction
 from .models import Pembelian
@@ -237,7 +237,7 @@ def proses_bayar_ajax(request, order_id):
         for seat in seats_in_purchase:
             # Buat data unik untuk QR (misal: order_id + seat_id)
             qr_data_string = f"SERVETIX-{pembelian.order_id}-{seat.id}" 
-            seat.qr_code_data = qr_data_string
+            seat.qrcode_data = qr_data_string
             
             qr_file = generate_qr_code(qr_data_string)
             # Simpan file QR ke objek Seat

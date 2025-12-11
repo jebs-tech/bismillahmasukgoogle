@@ -16,3 +16,4 @@ urlpatterns = [
     # DELETE: Halaman Konfirmasi Hapus
     path('delete/<int:pk>/', views.voucher_delete, name='delete'),
 ]
+
