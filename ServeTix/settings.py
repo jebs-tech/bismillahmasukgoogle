@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'homepage',
     'forums',    
     'notifications',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [

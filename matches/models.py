@@ -21,12 +21,7 @@ class Venue(models.Model):
 
 # Model Match (menggantikan user.Event)
 class Match(models.Model):
-    """
-    Match with optional relations to Team.
-    When both team_a and team_b exist, the title will be set automatically
-    to "{team_a.short_name or name} vs {team_b.short_name or name}" if title is empty
-    or if title appears to be an auto-generated title (contains ' vs ').
-    """
+    
     title = models.CharField(max_length=255, blank=True)
     venue = models.ForeignKey(Venue, on_delete=models.CASCADE)
     start_time = models.DateTimeField()
@@ -36,7 +31,7 @@ class Match(models.Model):
 
     description = models.TextField(blank=True)
 
-    price_from = models.PositiveIntegerField(default=75000, editable=False)
+    price_from = models.PositiveIntegerField(default=75000, editable=True)
 
     def __str__(self):
         if self.title:
