@@ -19,6 +19,7 @@ urlpatterns = [
     path('notifications/', include('notifications.urls')),
     path('vouchers/', include('voucher.urls', namespace='voucher')),
     path('api/payment/', include('payment.api_urls')),
+    path("api/user/", include("user.api_urls")),
 
 ]
 

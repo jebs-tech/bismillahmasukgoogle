@@ -9,3 +9,4 @@ django-widget-tweaksg
 APScheduler>=3.10.0
 qrcode
 Pillow
+djangorestframework-simplejwt
