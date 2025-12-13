@@ -206,9 +206,14 @@
     // Event Listener Tombol Konfirmasi (Tampilkan Harga)
     btnKonfirmasi.addEventListener('click', function() {
         const form = document.getElementById('form-detail-pembeli');
-        if (!form.checkValidity() || HARGA_SATUAN <= 0) {
+        const kategoriValue = selectKategori.value;
+        
+        if (!form.checkValidity() || HARGA_SATUAN <= 0 || !kategoriValue) {
             alert("Harap pilih kategori tempat duduk dan isi semua kolom wajib.");
             form.reportValidity();
+            if (!kategoriValue) {
+                selectKategori.focus();
+            }
             return;
         }
 
@@ -225,6 +230,21 @@
     btnLanjutPembayaran.addEventListener('click', function() {
         const form = document.getElementById('form-detail-pembeli');
         const formData = new FormData(form);
+        
+        // Validasi kategori sebelum mengirim
+        const kategoriValue = selectKategori.value;
+        const matchIdValue = document.getElementById('match_id').value;
+        
+        if (!kategoriValue || kategoriValue === '') {
+            alert('Harap pilih kategori tempat duduk terlebih dahulu.');
+            selectKategori.focus();
+            return;
+        }
+        
+        if (!matchIdValue || matchIdValue === '') {
+            alert('Error: Match ID tidak ditemukan. Silakan refresh halaman dan coba lagi.');
+            return;
+        }
         
         // Kumpulkan data tiket
         const tickets = [];
@@ -243,12 +263,14 @@
             tickets: tickets,
             
             // KUNCI BARU: Kirim Match ID dan Kategori ID
-            match_id: document.getElementById('match_id').value,
-            kategori_id: selectKategori.value,
+            match_id: matchIdValue,
+            kategori_id: kategoriValue,
 
             // KATEGORI TERPILIH untuk disimpan di model Tiket
             kategori_terpilih: KATEGORI_TERPILIH, 
         };
+        
+        console.log('Data yang akan dikirim:', dataToSend); // Debug log
 
         // Kirim AJAX POST
         fetch("{% url 'payment:simpan_pembelian_ajax' %}", {
