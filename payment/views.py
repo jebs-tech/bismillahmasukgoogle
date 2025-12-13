@@ -4,6 +4,7 @@ from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 import json
 import random
+import traceback
 from django.conf import settings
 from io import BytesIO
 from django.core.files.base import ContentFile
@@ -78,6 +79,20 @@ def simpan_pembelian_ajax(request):
         # 1. Validasi Input Dasar
         if not all(field in data for field in required_fields): 
             return JsonResponse({'status': 'error', 'message': 'Data input tidak lengkap.'}, status=400)
+        
+        # Validasi bahwa field tidak kosong
+        nama_lengkap = data['nama_lengkap'].strip() if data['nama_lengkap'] else ''
+        email = data['email'].strip() if data['email'] else ''
+        nomor_telepon = data['nomor_telepon'].strip() if data['nomor_telepon'] else ''
+        
+        if not nama_lengkap:
+            return JsonResponse({'status': 'error', 'message': 'Nama lengkap tidak boleh kosong.'}, status=400)
+        if not email:
+            return JsonResponse({'status': 'error', 'message': 'Email tidak boleh kosong.'}, status=400)
+        if '@' not in email:  # Validasi email sederhana
+            return JsonResponse({'status': 'error', 'message': 'Format email tidak valid.'}, status=400)
+        if not nomor_telepon:
+            return JsonResponse({'status': 'error', 'message': 'Nomor telepon tidak boleh kosong.'}, status=400)
             
         jumlah_tiket_diminta = len(data['tickets'])
         if jumlah_tiket_diminta <= 0:
@@ -85,19 +100,24 @@ def simpan_pembelian_ajax(request):
 
         # 2. Ambil Objek Match dan Kategori
         try:
-            match = Match.objects.get(id=data['match_id'])
-            kategori = SeatCategory.objects.get(id=data['kategori_id'])
+            # Konversi ke integer untuk memastikan tipe data benar
+            match_id = int(data['match_id'])
+            kategori_id = int(data['kategori_id'])
+            match = Match.objects.get(id=match_id)
+            kategori = SeatCategory.objects.get(id=kategori_id)
+        except (ValueError, TypeError) as e:
+            return JsonResponse({'status': 'error', 'message': f'Format ID tidak valid: {str(e)}'}, status=400)
         except Match.DoesNotExist:
             return JsonResponse({'status': 'error', 'message': 'Pertandingan tidak ditemukan.'}, status=404)
         except SeatCategory.DoesNotExist:
             return JsonResponse({'status': 'error', 'message': 'Kategori kursi tidak ditemukan.'}, status=404)
 
         # 3. Cari Kursi Tersedia (select_for_update untuk mengunci kursi)
-        available_seats = Seat.objects.select_for_update().filter(
+        available_seats = list(Seat.objects.select_for_update().filter(
             match=match,
             category=kategori,
             is_booked=False
-        )[:jumlah_tiket_diminta] 
+        )[:jumlah_tiket_diminta])
 
         # Cek apakah kursi cukup
         if len(available_seats) < jumlah_tiket_diminta:
@@ -111,36 +131,54 @@ def simpan_pembelian_ajax(request):
         
         # 5. VALIDASI DAN APLIKASI VOUCHER
         if voucher_code:
-            discount_amount, error_message = validate_and_apply_voucher(
-                voucher_code, 
-                request.user, 
-                float(total_harga_dasar)
-            )
-            
-            if error_message:
-                # Jika ada error validasi voucher, kembalikan error 400
-                return JsonResponse({'status': 'error', 'message': error_message}, status=400)
-            
-            if discount_amount > 0:
-                total_harga_final -= discount_amount
-                applied_code = voucher_code
+            try:
+                discount_amount, error_message = validate_and_apply_voucher(
+                    voucher_code, 
+                    request.user if hasattr(request, 'user') else None, 
+                    float(total_harga_dasar)
+                )
+                
+                if error_message:
+                    # Jika ada error validasi voucher, kembalikan error 400
+                    return JsonResponse({'status': 'error', 'message': error_message}, status=400)
+                
+                if discount_amount > 0:
+                    total_harga_final = max(0, total_harga_dasar - discount_amount)  # Pastikan tidak negatif
+                    applied_code = voucher_code
+            except Exception as e:
+                print(f"Error saat validasi voucher: {e}")
+                print(traceback.format_exc())
+                return JsonResponse({'status': 'error', 'message': f'Error saat validasi voucher: {str(e)}'}, status=400)
 
         # 6. Buat Objek Pembelian (Simpan HARGA FINAL dan KODE VOUCHER)
-        pembelian = Pembelian.objects.create(
-            user=request.user if request.user.is_authenticated else None,
-            match=match,
-            nama_lengkap_pembeli=data['nama_lengkap'],
-            email=data['email'],
-            nomor_telepon=data['nomor_telepon'],
-            total_price=total_harga_final, # <-- HARGA FINAL
-            kode_voucher=applied_code, # <-- KODE VOUCHER YANG BERHASIL
-            status='PENDING'
-        )
+        try:
+            pembelian = Pembelian.objects.create(
+                user=request.user if hasattr(request, 'user') and request.user.is_authenticated else None,
+                match=match,
+                nama_lengkap_pembeli=nama_lengkap,
+                email=email,
+                nomor_telepon=nomor_telepon,
+                total_price=int(total_harga_final), # <-- HARGA FINAL, ensure it's an integer
+                kode_voucher=applied_code, # <-- KODE VOUCHER YANG BERHASIL
+                status='PENDING'
+            )
+        except Exception as e:
+            print(f"Error saat membuat Pembelian: {e}")
+            print(traceback.format_exc())
+            return JsonResponse({'status': 'error', 'message': f'Error saat membuat pembelian: {str(e)}'}, status=500)
         
         # 7. Asosiasikan Kursi dan Tandai is_booked=True
-        pembelian.seats.set(available_seats)
-        seat_ids_to_book = [seat.id for seat in available_seats]
-        Seat.objects.filter(id__in=seat_ids_to_book).update(is_booked=True)
+        try:
+            if available_seats:
+                pembelian.seats.set(available_seats)
+                seat_ids_to_book = [seat.id for seat in available_seats]
+                Seat.objects.filter(id__in=seat_ids_to_book).update(is_booked=True)
+        except Exception as e:
+            print(f"Error saat mengasosiasikan kursi: {e}")
+            print(traceback.format_exc())
+            # Jika gagal mengasosiasikan kursi, hapus pembelian yang sudah dibuat
+            pembelian.delete()
+            return JsonResponse({'status': 'error', 'message': f'Error saat mengasosiasikan kursi: {str(e)}'}, status=500)
         
         # 8. Kirim Response Sukses
         return JsonResponse({
@@ -153,13 +191,21 @@ def simpan_pembelian_ajax(request):
 
     except json.JSONDecodeError:
         return JsonResponse({'status': 'error', 'message': 'Format data JSON tidak valid.'}, status=400)
-    except IntegrityError: 
+    except IntegrityError as e: 
          # IntegrityError bisa terjadi jika ada unique constraint yang dilanggar
+         print(f"IntegrityError saat menyimpan pembelian: {e}")
+         print(traceback.format_exc())
          return JsonResponse({'status': 'error', 'message': 'Kesalahan integritas data. Coba lagi.'}, status=409)
     except Exception as e:
         # Menangkap error Python lainnya
-        print(f"Error saat menyimpan pembelian (auto-assign): {e}") 
-        return JsonResponse({'status': 'error', 'message': f'Terjadi kesalahan di server.'}, status=500)
+        error_traceback = traceback.format_exc()
+        print(f"Error saat menyimpan pembelian (auto-assign): {e}")
+        print(error_traceback)
+        # Return error message yang lebih informatif untuk debugging (dalam production, gunakan pesan generic)
+        return JsonResponse({
+            'status': 'error', 
+            'message': f'Terjadi kesalahan di server: {str(e)}'
+        }, status=500)
 
 def detail_pembayaran_view(request, order_id):
     pembelian = get_object_or_404(Pembelian, order_id=order_id, status='PENDING')
