@@ -7,6 +7,7 @@ import random
 import string
 import traceback
 import os
+import logging
 from django.conf import settings
 from io import BytesIO
 from django.core.files.base import ContentFile
@@ -56,12 +57,56 @@ def detail_pembeli_view(request):
 
 # -----------------------------
 
+# Setup logger
+logger = logging.getLogger(__name__)
+
 @require_POST
 @transaction.atomic
 def simpan_pembelian_ajax(request):
+    """
+    Endpoint untuk menyimpan data pembelian.
+    Menggunakan transaction.atomic untuk memastikan konsistensi data.
+    """
+    
     try:
-        data = json.loads(request.body)
-        print(f"DEBUG: Data received: {data}")  # Debug log
+        # Log request info untuk debugging - GUNAKAN print juga untuk memastikan muncul di log
+        print("=" * 50)
+        print("DEBUG: simpan_pembelian_ajax called")
+        print(f"Request method: {request.method}")
+        print(f"User: {request.user if request.user.is_authenticated else 'Anonymous'}")
+        print(f"Content-Type: {request.META.get('CONTENT_TYPE')}")
+        print(f"CSRF Token in header: {request.META.get('HTTP_X_CSRFTOKEN', 'NOT FOUND')}")
+        print("=" * 50)
+        
+        logger.info(f"Request received from: {request.META.get('REMOTE_ADDR')}")
+        logger.info(f"User: {request.user if request.user.is_authenticated else 'Anonymous'}")
+        logger.info(f"Request method: {request.method}")
+        logger.info(f"Content-Type: {request.META.get('CONTENT_TYPE')}")
+        
+        # Parse JSON body
+        try:
+            body_str = request.body.decode('utf-8')
+            print(f"DEBUG: Request body: {body_str[:200]}...")  # Print first 200 chars
+            data = json.loads(body_str)
+            logger.info(f"DEBUG: Data received: {data}")
+            print(f"DEBUG: Parsed data keys: {list(data.keys())}")
+        except json.JSONDecodeError as e:
+            error_msg = f"JSON decode error: {str(e)}"
+            print(f"ERROR: {error_msg}")
+            logger.error(error_msg)
+            return JsonResponse({
+                "status": "error",
+                "message": "Format JSON tidak valid"
+            }, status=400)
+        except Exception as e:
+            error_msg = f"Error parsing request body: {str(e)}"
+            print(f"ERROR: {error_msg}")
+            logger.error(error_msg)
+            logger.error(traceback.format_exc())
+            return JsonResponse({
+                "status": "error",
+                "message": f"Error membaca data: {str(e)}"
+            }, status=400)
 
         # Convert ke integer jika string
         try:
@@ -226,18 +271,52 @@ def simpan_pembelian_ajax(request):
             "message": f"Format data tidak valid: {str(e)}"
         }, status=400)
 
-    except Match.DoesNotExist:
+    except Match.DoesNotExist as e:
+        error_msg = f"Match tidak ditemukan: {e}"
+        print(f"ERROR: {error_msg}")
+        logger.error(error_msg)
         return JsonResponse({"status": "error", "message": "Match tidak ditemukan"}, status=404)
 
-    except SeatCategory.DoesNotExist:
+    except SeatCategory.DoesNotExist as e:
+        error_msg = f"Kategori tidak ditemukan: {e}"
+        print(f"ERROR: {error_msg}")
+        logger.error(error_msg)
         return JsonResponse({"status": "error", "message": "Kategori tidak ditemukan"}, status=404)
-
+    
     except Exception as e:
-        print("ERROR simpan_pembelian_ajax:", e)
-        print(traceback.format_exc())
+        error_type = type(e).__name__
+        error_message = str(e)
+        error_traceback = traceback.format_exc()
+        
+        # Print ke console (akan muncul di log PWS)
+        print("=" * 50)
+        print(f"CRITICAL ERROR in simpan_pembelian_ajax")
+        print(f"Error Type: {error_type}")
+        print(f"Error Message: {error_message}")
+        print("Full Traceback:")
+        print(error_traceback)
+        print("=" * 50)
+        
+        # Log juga menggunakan logger
+        logger.error(f"ERROR simpan_pembelian_ajax [{error_type}]: {error_message}")
+        logger.error(error_traceback)
+        
+        # Berikan pesan error yang lebih informatif berdasarkan tipe error
+        if "database" in error_message.lower() or "connection" in error_message.lower():
+            user_message = "Terjadi masalah dengan database. Silakan coba lagi dalam beberapa saat."
+        elif "timeout" in error_message.lower():
+            user_message = "Request timeout. Silakan coba lagi."
+        elif "memory" in error_message.lower():
+            user_message = "Server kehabisan memori. Silakan hubungi administrator."
+        elif "does not exist" in error_message.lower():
+            user_message = "Data yang diminta tidak ditemukan di database."
+        else:
+            user_message = f"Terjadi kesalahan: {error_message}"
+        
         return JsonResponse({
             "status": "error",
-            "message": f"Internal Server Error: {str(e)}"
+            "message": user_message,
+            "error_type": error_type if settings.DEBUG else None  # Hanya tampilkan di development
         }, status=500)
 
         
