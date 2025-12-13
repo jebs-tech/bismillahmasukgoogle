@@ -148,7 +148,7 @@
     // Metode yang memerlukan bukti transfer
     const metodeBank = ['BRI', 'BCA', 'Mandiri'];
     // Metode yang menampilkan QRIS
-    const metodeQRIS = ['QRIS'];
+    const metodeQRIS = ['QRIS', 'Gopay'];
 
     function updateButtonState() {
         const metodeTerpilih = metodePembayaranSelect.value;
@@ -180,14 +180,13 @@
         
         if (metodeTerpilih) {
             if (metodeBank.includes(metodeTerpilih)) {
-                // Tampilkan upload bukti transfer
+                // Tampilkan upload bukti transfer untuk metode bank
                 buktiTransferContainer.classList.remove('hidden');
                 buktiTransferInput.required = true;
             } else if (metodeQRIS.includes(metodeTerpilih)) {
-                // Tampilkan QRIS
+                // Tampilkan QRIS untuk QRIS dan GoPay
                 qrisDisplay.classList.remove('hidden');
             }
-            // GoPay tidak perlu tampilkan apa-apa
         }
         
         updateButtonState();
