@@ -390,6 +390,11 @@ def proses_bayar_ajax(request, order_id):
         if bukti_transfer:
             pembelian.bukti_transfer = bukti_transfer
         pembelian.status = 'CONFIRMED'
+        
+        # Assign user jika user sudah login (untuk memastikan tiket muncul di dashboard)
+        if request.user.is_authenticated and not pembelian.user:
+            pembelian.user = request.user
+        
         pembelian.save()
 
         # =====================
