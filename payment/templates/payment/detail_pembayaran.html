@@ -92,20 +92,44 @@
 
             <button type="submit" id="btn-konfirmasi-bayar"
                 class="w-full px-6 py-3 bg-brand-orange text-white font-bold rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
-                Pilih Metode Pembayaran
+                Selesaikan Pembayaran
             </button>
         </form>
 
     </div>
 </div>
 
-<div id="modal-eticket" class="fixed inset-0 hidden bg-black bg-opacity-50 z-50">
-    <div class="bg-white p-6 mx-auto mt-20 max-w-md rounded-lg">
-        <h3 class="font-bold mb-4">E-Ticket Anda Siap!</h3>
-        <button id="btn-tutup-eticket-modal"
-            class="bg-brand-light-blue text-white px-4 py-2 rounded-md">
-            Tutup
-        </button>
+<div id="modal-eticket" class="fixed inset-0 hidden bg-black bg-opacity-50 z-50 overflow-y-auto">
+    <div class="bg-white p-6 mx-auto my-8 max-w-3xl rounded-lg shadow-xl">
+        <div class="flex justify-between items-center mb-6 border-b pb-4">
+            <h3 class="text-2xl font-bold text-brand-dark-blue">E-Ticket Anda Siap!</h3>
+            <button id="btn-tutup-eticket-modal"
+                class="text-gray-400 hover:text-gray-600 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        
+        <div id="ticket-info" class="mb-6 p-4 bg-gray-50 rounded-lg">
+            <p class="text-sm text-gray-600">Order ID:</p>
+            <p class="text-xl font-bold text-brand-orange" id="modal-order-id"></p>
+            <p class="text-sm text-gray-600 mt-2">Pertandingan:</p>
+            <p class="text-lg font-semibold text-gray-800" id="modal-match-title"></p>
+            <p class="text-sm text-gray-600" id="modal-match-venue"></p>
+            <p class="text-sm text-gray-600" id="modal-match-date"></p>
+        </div>
+        
+        <div id="tickets-container" class="space-y-6">
+            <!-- Tiket akan di-render di sini -->
+        </div>
+        
+        <div class="mt-6 flex justify-end">
+            <button id="btn-tutup-eticket-modal-bottom"
+                class="bg-brand-light-blue text-white px-6 py-2 rounded-md hover:bg-brand-dark-blue transition-colors">
+                Tutup
+            </button>
+        </div>
     </div>
 </div>
 
@@ -273,23 +297,82 @@
             const data = await res.json();
             
             if (data.status === 'success') {
+                // Tampilkan informasi order
+                document.getElementById('modal-order-id').textContent = data.order_id;
+                document.getElementById('modal-match-title').textContent = data.match_title || 'N/A';
+                document.getElementById('modal-match-venue').textContent = data.match_venue || 'N/A';
+                document.getElementById('modal-match-date').textContent = data.match_date || 'N/A';
+                
+                // Render tiket
+                const ticketsContainer = document.getElementById('tickets-container');
+                ticketsContainer.innerHTML = '';
+                
+                if (data.tickets && data.tickets.length > 0) {
+                    data.tickets.forEach((ticket, index) => {
+                        const ticketCard = document.createElement('div');
+                        ticketCard.className = 'bg-white border-2 border-brand-light-blue rounded-lg p-6 shadow-md';
+                        ticketCard.innerHTML = `
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <h4 class="text-lg font-bold text-brand-dark-blue">Tiket #${index + 1}</h4>
+                                    <p class="text-sm text-gray-600">Kursi: <span class="font-semibold">${ticket.seat}</span> | Kategori: <span class="font-semibold">${ticket.category}</span></p>
+                                </div>
+                            </div>
+                            
+                            <div class="text-center p-4 bg-gray-50 rounded-lg border border-gray-200 mb-4">
+                                <p class="text-sm font-semibold text-brand-dark-blue mb-3">SCAN TIKET ANDA</p>
+                                <img src="${ticket.qr_url}" 
+                                     alt="QR Code Tiket ${ticket.seat}" 
+                                     class="w-48 h-48 mx-auto border-4 border-white shadow-lg">
+                            </div>
+                            
+                            <div class="flex justify-center">
+                                <a href="${ticket.qr_url}" 
+                                   download="tiket_${data.order_id}_${ticket.seat}.png"
+                                   class="bg-brand-orange text-white px-6 py-2 rounded-md hover:bg-orange-600 transition-colors font-semibold inline-flex items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                                    </svg>
+                                    Unduh Tiket
+                                </a>
+                            </div>
+                        `;
+                        ticketsContainer.appendChild(ticketCard);
+                    });
+                } else {
+                    ticketsContainer.innerHTML = '<p class="text-center text-gray-500">Tidak ada tiket ditemukan.</p>';
+                }
+                
                 document.getElementById('modal-eticket').classList.remove('hidden');
+                // Scroll ke atas modal
+                document.getElementById('modal-eticket').scrollTop = 0;
             } else {
                 alert('Gagal memproses pembayaran: ' + (data.message || 'Terjadi kesalahan'));
                 btnKonfirmasiBayar.disabled = false;
-                btnKonfirmasiBayar.textContent = 'Pilih Metode Pembayaran';
+                btnKonfirmasiBayar.textContent = 'Selesaikan Pembayaran';
             }
         } catch (error) {
             console.error('Error:', error);
             alert('Terjadi kesalahan saat memproses pembayaran. Silakan coba lagi.');
             btnKonfirmasiBayar.disabled = false;
-            btnKonfirmasiBayar.textContent = 'Pilih Metode Pembayaran';
+            btnKonfirmasiBayar.textContent = 'Selesaikan Pembayaran';
         }
     });
 
-    document.getElementById('btn-tutup-eticket-modal').addEventListener('click', () => {
+    function closeEticketModal() {
         document.getElementById('modal-eticket').classList.add('hidden');
+        // Refresh halaman untuk update tiket aktif
         window.location.href = '/';
+    }
+    
+    document.getElementById('btn-tutup-eticket-modal').addEventListener('click', closeEticketModal);
+    document.getElementById('btn-tutup-eticket-modal-bottom').addEventListener('click', closeEticketModal);
+    
+    // Tutup modal saat klik di luar
+    document.getElementById('modal-eticket').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeEticketModal();
+        }
     });
 </script>
 

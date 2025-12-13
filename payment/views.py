@@ -407,9 +407,11 @@ def proses_bayar_ajax(request, order_id):
             seat.file_qr_code.save(filename, qr_file, save=True)
 
             etickets.append({
+                "seat_id": seat.id,
                 "seat": f"{seat.row}{seat.col}",
                 "category": seat.category.name,
-                "qr_url": seat.file_qr_code.url
+                "qr_url": seat.file_qr_code.url,
+                "qr_data": qr_data
             })
 
         # =====================
@@ -419,6 +421,9 @@ def proses_bayar_ajax(request, order_id):
             "status": "success",
             "message": "Pembayaran berhasil, e-ticket siap.",
             "order_id": pembelian.order_id,
+            "match_title": pembelian.match.title if pembelian.match else "N/A",
+            "match_venue": pembelian.match.venue.name if pembelian.match and pembelian.match.venue else "N/A",
+            "match_date": pembelian.match.start_time.strftime("%d %B %Y, %H:%M") if pembelian.match else "N/A",
             "tickets": etickets
         }, status=200)
 
