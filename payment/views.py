@@ -91,6 +91,26 @@ def simpan_pembelian_ajax(request):
                 "status": "error",
                 "message": "Nama lengkap, email, dan nomor telepon wajib diisi"
             }, status=400)
+        
+        # Validasi format email sederhana
+        if '@' not in email or '.' not in email.split('@')[-1]:
+            return JsonResponse({
+                "status": "error",
+                "message": "Format email tidak valid"
+            }, status=400)
+        
+        # Validasi panjang field
+        if len(nama_lengkap) > 100:
+            return JsonResponse({
+                "status": "error",
+                "message": "Nama lengkap terlalu panjang (maksimal 100 karakter)"
+            }, status=400)
+        
+        if len(nomor_telepon) > 20:
+            return JsonResponse({
+                "status": "error",
+                "message": "Nomor telepon terlalu panjang (maksimal 20 karakter)"
+            }, status=400)
 
         match = Match.objects.get(id=match_id)
         kategori = SeatCategory.objects.get(id=kategori_id)
@@ -99,6 +119,18 @@ def simpan_pembelian_ajax(request):
         jumlah_tiket = len(tickets)
         total_harga = jumlah_tiket * kategori.price
 
+        # Cek apakah ada seat untuk match dan kategori ini
+        total_seats = Seat.objects.filter(
+            match=match,
+            category=kategori
+        ).count()
+        
+        if total_seats == 0:
+            return JsonResponse({
+                "status": "error",
+                "message": f"Tidak ada kursi yang tersedia untuk kategori {kategori.name} pada pertandingan ini. Silakan hubungi administrator."
+            }, status=400)
+
         # Cek jumlah seat yang tersedia SEBELUM mengambil
         total_available = Seat.objects.filter(
             match=match,
@@ -106,7 +138,7 @@ def simpan_pembelian_ajax(request):
             is_booked=False
         ).count()
 
-        print(f"DEBUG: Match ID: {match_id}, Kategori ID: {kategori_id}, Total available: {total_available}, Dibutuhkan: {jumlah_tiket}")
+        print(f"DEBUG: Match ID: {match_id}, Kategori ID: {kategori_id}, Total seats: {total_seats}, Total available: {total_available}, Dibutuhkan: {jumlah_tiket}")
 
         if total_available < jumlah_tiket:
             return JsonResponse({
@@ -126,6 +158,11 @@ def simpan_pembelian_ajax(request):
                 "status": "error",
                 "message": f"Tidak cukup kursi tersedia saat ini. Silakan coba lagi."
             }, status=400)
+        
+        print(f"DEBUG: Found {len(available_seats)} available seats")
+
+        # Simpan seat IDs untuk rollback jika diperlukan
+        seat_ids = [seat.id for seat in available_seats]
 
         # Buat Pembelian
         try:
@@ -147,27 +184,30 @@ def simpan_pembelian_ajax(request):
                 "message": f"Gagal membuat pembelian: {str(e)}"
             }, status=500)
 
-        # Hubungkan seat ke pembelian dan update status booked
+        # Hubungkan seat ke pembelian (setelah Pembelian dibuat)
         try:
             pembelian.seats.set(available_seats)
             print(f"DEBUG: {len(available_seats)} seats linked to pembelian")
         except Exception as e:
             print(f"ERROR linking seats: {e}")
             print(traceback.format_exc())
+            # Hapus pembelian jika gagal link seat
+            pembelian.delete()
             return JsonResponse({
                 "status": "error",
                 "message": f"Gagal menghubungkan seat: {str(e)}"
             }, status=500)
         
-        # Update is_booked untuk setiap seat
+        # Update is_booked untuk setiap seat SETELAH semuanya berhasil
         try:
-            for seat in available_seats:
-                seat.is_booked = True
-                seat.save()
+            Seat.objects.filter(id__in=seat_ids).update(is_booked=True)
             print(f"DEBUG: {len(available_seats)} seats marked as booked")
         except Exception as e:
             print(f"ERROR updating seat status: {e}")
             print(traceback.format_exc())
+            # Rollback: hapus pembelian dan unlink seats
+            pembelian.seats.clear()
+            pembelian.delete()
             return JsonResponse({
                 "status": "error",
                 "message": f"Gagal update status seat: {str(e)}"

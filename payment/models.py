@@ -52,12 +52,20 @@ class Pembelian(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.order_id:
-            while True:
+            max_attempts = 100
+            attempts = 0
+            while attempts < max_attempts:
                 random_digits = ''.join(random.choices(string.digits, k=6))
                 new_order_id = f"AII{random_digits}"
                 if not Pembelian.objects.filter(order_id=new_order_id).exists():
                     self.order_id = new_order_id
                     break
+                attempts += 1
+            else:
+                # Fallback: gunakan timestamp jika semua kombinasi sudah digunakan
+                import time
+                timestamp = str(int(time.time()))[-6:]
+                self.order_id = f"AII{timestamp}"
         super().save(*args, **kwargs)
 
     def __str__(self):
