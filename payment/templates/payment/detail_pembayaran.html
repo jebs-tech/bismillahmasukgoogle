@@ -205,17 +205,13 @@
 
         try {
             // kirim total harga mentah juga!
-            const response = await fetch("{% url 'payment:check_voucher_ajax' %}", {
+            const response = await fetch(
+                "{% url 'payment:proses_bayar_ajax' order_id=pembelian.order_id %}", {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
                     'X-CSRFToken': CSRF_TOKEN
                 },
-                body: JSON.stringify({ 
-                    code: code, 
-                    total: HARGA_DASAR_GLOBAL, // ⬅️ kirim total harga mentah
-                    order_id: orderId 
-                })
+                body: formData
             });
 
             const result = await response.json();
