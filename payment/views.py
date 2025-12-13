@@ -16,6 +16,9 @@ from django.db import transaction, IntegrityError
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from .models import Pembelian
 from matches.models import Seat, Venue, Match, SeatCategory
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 from voucher.utils import validate_and_apply_voucher
 from voucher.models import VoucherUsage, Voucher
 
@@ -69,41 +72,62 @@ def simpan_pembelian_ajax(request):
             }, status=400)
 
         match = Match.objects.get(id=match_id)
-        kategori = Category.objects.get(id=kategori_id)
+        kategori = SeatCategory.objects.get(id=kategori_id)
 
-        order = Order.objects.create(
+        # Hitung total harga
+        jumlah_tiket = len(tickets)
+        total_harga = jumlah_tiket * kategori.price
+
+        # Cari seat yang tersedia untuk kategori ini
+        available_seats = Seat.objects.filter(
             match=match,
-            kategori=kategori,
-            nama_lengkap=data.get("nama_lengkap"),
+            category=kategori,
+            is_booked=False
+        )[:jumlah_tiket]
+
+        if available_seats.count() < jumlah_tiket:
+            return JsonResponse({
+                "status": "error",
+                "message": f"Tidak cukup kursi tersedia. Tersedia: {available_seats.count()}, Dibutuhkan: {jumlah_tiket}"
+            }, status=400)
+
+        # Buat Pembelian
+        pembelian = Pembelian.objects.create(
+            match=match,
+            user=request.user if request.user.is_authenticated else None,
+            nama_lengkap_pembeli=data.get("nama_lengkap"),
             email=data.get("email"),
             nomor_telepon=data.get("nomor_telepon"),
-            total_harga=len(tickets) * kategori.price
+            total_price=total_harga,
+            status='PENDING'
         )
 
-        for t in tickets:
-            Ticket.objects.create(
-                order=order,
-                nama=t["nama"],
-                jenis_kelamin=t["jenis_kelamin"],
-                kategori=kategori
-            )
+        # Hubungkan seat ke pembelian dan update status booked
+        seat_list = list(available_seats)
+        pembelian.seats.set(seat_list)
+        
+        # Update is_booked untuk setiap seat
+        for seat in seat_list:
+            seat.is_booked = True
+            seat.save()
 
         return JsonResponse({
             "status": "success",
-            "order_id": order.id
+            "order_id": pembelian.order_id
         })
 
     except Match.DoesNotExist:
         return JsonResponse({"status": "error", "message": "Match tidak ditemukan"}, status=404)
 
-    except Category.DoesNotExist:
+    except SeatCategory.DoesNotExist:
         return JsonResponse({"status": "error", "message": "Kategori tidak ditemukan"}, status=404)
 
     except Exception as e:
         print("ERROR simpan_pembelian_ajax:", e)
+        print(traceback.format_exc())
         return JsonResponse({
             "status": "error",
-            "message": "Internal Server Error"
+            "message": f"Internal Server Error: {str(e)}"
         }, status=500)
 
         

@@ -6,10 +6,21 @@ document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById("form-detail-pembeli");
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
 
+    // Skip jika event listener sudah ada di template (detail_pembeli.html)
+    // Cek apakah sudah ada handler dengan mengecek data attribute atau class
     if (!btnLanjutPembayaran || !modalKonfirmasi || !form || !selectKategori) {
-        console.error("Elemen penting tidak ditemukan");
+        console.log("Payment logic: Elemen tidak ditemukan atau handler sudah ada di template");
         return;
     }
+
+    // Cek apakah sudah ada event listener (untuk menghindari duplikasi)
+    if (btnLanjutPembayaran.dataset.listenerAttached === 'true') {
+        console.log("Payment logic: Event listener sudah ada, skip");
+        return;
+    }
+
+    // Tandai bahwa listener sudah di-attach
+    btnLanjutPembayaran.dataset.listenerAttached = 'true';
 
     btnLanjutPembayaran.addEventListener("click", async function () {
         try {
@@ -50,7 +61,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             console.log("Data dikirim:", payload);
 
-            const response = await fetch("/payment/simpan_pembelian_ajax/", {
+            const response = await fetch("/payment/api/simpan-pembelian/", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
