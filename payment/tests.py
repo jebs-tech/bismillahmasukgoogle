@@ -44,6 +44,7 @@ class PaymentViewTests(TestCase):
         self.assertContains(response, self.category.name)
 
     def test_simpan_pembelian_ajax_success(self):
+        """Test pembelian sukses - tidak boleh menghasilkan error 500"""
         url = reverse('payment:simpan_pembelian_ajax')
         payload = {
             "nama_lengkap": "Bunga Saragih",
@@ -51,14 +52,23 @@ class PaymentViewTests(TestCase):
             "nomor_telepon": "081234567890",
             "match_id": self.match.id,
             "kategori_id": self.category.id,
-            "tickets": ["A1", "A2"]
+            "tickets": [
+                {"nama": "Bunga Saragih", "jenis_kelamin": "P"},
+                {"nama": "John Doe", "jenis_kelamin": "L"}
+            ]
         }
         response = self.client.post(url, data=json.dumps(payload), content_type='application/json')
+        # Pastikan tidak ada error 500
+        self.assertNotEqual(response.status_code, 500, "Seharusnya tidak ada error 500")
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertEqual(data['status'], 'success')
         self.assertIn('order_id', data)
         self.assertEqual(Pembelian.objects.count(), 1)
+        
+        # Pastikan kursi sudah di-book
+        pembelian = Pembelian.objects.first()
+        self.assertEqual(pembelian.seats.count(), 2)
 
     def test_simpan_pembelian_ajax_not_enough_seats(self):
         url = reverse('payment:simpan_pembelian_ajax')

@@ -19,6 +19,8 @@ urlpatterns = [
     path('payment/', include('payment.urls', namespace='payment')),
     path('notifications/', include('notifications.urls')),
     path('vouchers/', include('voucher.urls', namespace='voucher')),
+    # API endpoint untuk Flutter (singular form)
+    path('voucher/', include('voucher.urls')),
 ]
 
 
