@@ -60,11 +60,24 @@ def simpan_pembelian_ajax(request):
     """Endpoint AJAX: Pilih kategori & jumlah, server cari kursi, dan terapkan diskon voucher."""
     
     try:
-        data = json.loads(request.body)
-        voucher_code = data.get('kode_voucher', '').strip()
+        # Parse JSON dengan error handling yang lebih baik
+        try:
+            body_str = request.body.decode('utf-8')
+            data = json.loads(body_str)
+        except UnicodeDecodeError as e:
+            print(f"[ERROR] Unicode decode error: {e}")
+            return JsonResponse({'status': 'error', 'message': 'Format data tidak valid (encoding error).'}, status=400)
+        except json.JSONDecodeError as e:
+            print(f"[ERROR] JSON decode error: {e}")
+            print(f"[ERROR] Request body: {request.body}")
+            return JsonResponse({'status': 'error', 'message': 'Format data JSON tidak valid.'}, status=400)
+        
+        voucher_code = data.get('kode_voucher', '').strip() if data.get('kode_voucher') else ''
         
         # Debug: print data yang diterima (hapus di production)
         print(f"[DEBUG] Data received: {data}")
+        print(f"[DEBUG] Request method: {request.method}")
+        print(f"[DEBUG] User authenticated: {hasattr(request, 'user') and request.user.is_authenticated if hasattr(request, 'user') else False}")
         
         required_fields = ['nama_lengkap', 'email', 'nomor_telepon', 'match_id', 'kategori_id', 'tickets']
         # 1. Validasi Input Dasar
@@ -76,9 +89,13 @@ def simpan_pembelian_ajax(request):
             }, status=400)
         
         # Validasi bahwa field tidak kosong
-        nama_lengkap = data['nama_lengkap'].strip() if data['nama_lengkap'] else ''
-        email = data['email'].strip() if data['email'] else ''
-        nomor_telepon = data['nomor_telepon'].strip() if data['nomor_telepon'] else ''
+        try:
+            nama_lengkap = str(data['nama_lengkap']).strip() if data.get('nama_lengkap') else ''
+            email = str(data['email']).strip() if data.get('email') else ''
+            nomor_telepon = str(data['nomor_telepon']).strip() if data.get('nomor_telepon') else ''
+        except (AttributeError, TypeError) as e:
+            print(f"[ERROR] Error saat memproses field: {e}")
+            return JsonResponse({'status': 'error', 'message': 'Format data tidak valid.'}, status=400)
         
         # Validasi panjang field
         if not nama_lengkap:
@@ -244,22 +261,21 @@ def simpan_pembelian_ajax(request):
             'discount_amount': discount_amount
         }, status=200)
 
-    except json.JSONDecodeError:
-        return JsonResponse({'status': 'error', 'message': 'Format data JSON tidak valid.'}, status=400)
     except IntegrityError as e: 
          # IntegrityError bisa terjadi jika ada unique constraint yang dilanggar
-         print(f"IntegrityError saat menyimpan pembelian: {e}")
+         print(f"[ERROR] IntegrityError saat menyimpan pembelian: {e}")
          print(traceback.format_exc())
-         return JsonResponse({'status': 'error', 'message': 'Kesalahan integritas data. Coba lagi.'}, status=409)
+         return JsonResponse({'status': 'error', 'message': 'Kesalahan integritas data. Silakan coba lagi.'}, status=409)
     except Exception as e:
-        # Menangkap error Python lainnya
+        # Menangkap error Python lainnya yang tidak terduga
         error_traceback = traceback.format_exc()
-        print(f"Error saat menyimpan pembelian (auto-assign): {e}")
-        print(error_traceback)
-        # Return error message yang lebih informatif untuk debugging (dalam production, gunakan pesan generic)
+        error_type = type(e).__name__
+        print(f"[ERROR] Unexpected error saat menyimpan pembelian: {error_type}: {e}")
+        print(f"[ERROR] Full traceback:\n{error_traceback}")
+        # Return error message yang lebih informatif untuk debugging
         return JsonResponse({
             'status': 'error', 
-            'message': f'Terjadi kesalahan di server: {str(e)}'
+            'message': f'Terjadi kesalahan di server ({error_type}): {str(e)}. Silakan coba lagi atau hubungi administrator jika masalah berlanjut.'
         }, status=500)
 
 def detail_pembayaran_view(request, order_id):
