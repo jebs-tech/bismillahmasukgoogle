@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 
+
 app_name = 'voucher'
 
 urlpatterns = [
@@ -15,5 +16,9 @@ urlpatterns = [
 
     # DELETE: Halaman Konfirmasi Hapus
     path('delete/<int:pk>/', views.voucher_delete, name='delete'),
+
+    # API untuk Flutter
+    path('api/list/', views.api_voucher_list, name='api_list'),
+    path('api/redeem/', views.api_redeem_voucher, name='api_redeem'),
 ]
 
