@@ -118,6 +118,8 @@
     </div>
 </div>
 
+{{ max_tiket_per_transaksi|json_script:"max-tiket-data" }}
+
 <script>
     // --- DATA DINAMIS DARI FRONT-END ---
     const selectKategori = document.getElementById('kategori_tempat_duduk');
@@ -125,7 +127,7 @@
     const btnKonfirmasi = document.getElementById('btn-konfirmasi-total');
     
     // Variabel yang diambil dari konteks Django, hanya untuk MAX_TIKET dan CSRF
-    const MAX_TIKET_PER_TRANSAKSI = {{ max_tiket_per_transaksi|default:5 }};
+    const MAX_TIKET_PER_TRANSAKSI = parseInt(document.getElementById('max-tiket-data').textContent) || 5;
     const CSRF_TOKEN = document.querySelector('[name=csrfmiddlewaretoken]').value;
     
     let HARGA_SATUAN = 0; // Diinisialisasi di sini
