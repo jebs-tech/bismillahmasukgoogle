@@ -146,18 +146,27 @@ def simpan_pembelian_ajax(request):
                     'message': f'Format ID tidak valid. Match ID: "{match_id_raw}", Kategori ID: "{kategori_id_raw}". Pastikan keduanya adalah angka.'
                 }, status=400)
             
-            match = Match.objects.get(id=match_id)
-            kategori = SeatCategory.objects.get(id=kategori_id)
+            try:
+                match = Match.objects.get(id=match_id)
+            except Match.DoesNotExist:
+                print(f"[ERROR] Match dengan ID {match_id} tidak ditemukan")
+                return JsonResponse({'status': 'error', 'message': f'Pertandingan dengan ID {match_id} tidak ditemukan.'}, status=404)
+            
+            try:
+                kategori = SeatCategory.objects.get(id=kategori_id)
+            except SeatCategory.DoesNotExist:
+                print(f"[ERROR] Kategori dengan ID {kategori_id} tidak ditemukan")
+                return JsonResponse({'status': 'error', 'message': f'Kategori kursi dengan ID {kategori_id} tidak ditemukan.'}, status=404)
             
             # Validasi kategori memiliki price yang valid
             if kategori.price is None or kategori.price < 0:
                 return JsonResponse({'status': 'error', 'message': f'Harga kategori {kategori.name} tidak valid.'}, status=400)
             
             print(f"[DEBUG] Found - Match: {match.title}, Kategori: {kategori.name}, Price: {kategori.price}")
-        except Match.DoesNotExist:
-            return JsonResponse({'status': 'error', 'message': f'Pertandingan dengan ID {match_id} tidak ditemukan.'}, status=404)
-        except SeatCategory.DoesNotExist:
-            return JsonResponse({'status': 'error', 'message': f'Kategori kursi dengan ID {kategori_id} tidak ditemukan.'}, status=404)
+        except Exception as e:
+            print(f"[ERROR] Unexpected error saat mengambil Match/Kategori: {e}")
+            print(traceback.format_exc())
+            return JsonResponse({'status': 'error', 'message': f'Error saat mengambil data pertandingan/kategori: {str(e)}'}, status=500)
 
         # 3. Cari Kursi Tersedia (select_for_update untuk mengunci kursi)
         try:

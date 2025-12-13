@@ -325,12 +325,14 @@
                 })
                 .then(data => {
                     if (data.status === 'success') {
-                        modalKonfirmasi.classList.add('hidden');
+                        if (modalKonfirmasi) {
+                            modalKonfirmasi.classList.add('hidden');
+                        }
                         // Redirect ke halaman Detail Pembayaran dengan Order ID dari server
                         let url = "{% url 'payment:detail_pembayaran' order_id='0' %}".replace('0', data.order_id);
                         window.location.href = url;
                     } else {
-                        alert('Gagal menyimpan data pembelian: ' + data.message);
+                        alert('Gagal menyimpan data pembelian: ' + (data.message || 'Unknown error'));
                     }
                 })
                 .catch(error => {
