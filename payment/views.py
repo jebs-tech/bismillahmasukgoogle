@@ -16,6 +16,9 @@ from matches.models import Seat, Venue, Match, SeatCategory
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from voucher.utils import validate_and_apply_voucher
 from voucher.models import VoucherUsage, Voucher # Import model penggunaan
+from django.conf import settings
+import qrcode
+import os
 
 
 # --- SIMULASI DATA DARI HALAMAN DETAIL PERTANDINGAN (Priyz) ---
@@ -50,8 +53,6 @@ def detail_pembeli_view(request):
     
     return render(request, 'payment/detail_pembeli.html', context)
 
-
-# Di atas file payment/views.py
 import json
 import random
 import string
@@ -59,8 +60,6 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.db import transaction, IntegrityError
-
-# --- Import Model yang BENAR ---
 from .models import Pembelian
 from matches.models import Match, Seat, SeatCategory 
 # -----------------------------
@@ -82,7 +81,7 @@ def simpan_pembelian_ajax(request):
             
         jumlah_tiket_diminta = len(data['tickets'])
         if jumlah_tiket_diminta <= 0:
-             return JsonResponse({'status': 'error', 'message': 'Jumlah tiket tidak valid.'}, status=400)
+            return JsonResponse({'status': 'error', 'message': 'Jumlah tiket tidak valid.'}, status=400)
 
         # 2. Ambil Objek Match dan Kategori
         try:
@@ -91,7 +90,7 @@ def simpan_pembelian_ajax(request):
         except Match.DoesNotExist:
             return JsonResponse({'status': 'error', 'message': 'Pertandingan tidak ditemukan.'}, status=404)
         except SeatCategory.DoesNotExist:
-             return JsonResponse({'status': 'error', 'message': 'Kategori kursi tidak ditemukan.'}, status=404)
+            return JsonResponse({'status': 'error', 'message': 'Kategori kursi tidak ditemukan.'}, status=404)
 
         # 3. Cari Kursi Tersedia (select_for_update untuk mengunci kursi)
         available_seats = Seat.objects.select_for_update().filter(
@@ -210,7 +209,7 @@ def generate_qr_code(qr_data):
 # --- VIEW UTAMA AJAX UNTUK PEMBAYARAN ---
 
 @require_POST
-@csrf_exempt 
+@csrf_exempt
 @transaction.atomic
 def proses_bayar_ajax(request, order_id):
     pembelian = get_object_or_404(Pembelian, order_id=order_id, status='PENDING')
@@ -220,41 +219,57 @@ def proses_bayar_ajax(request, order_id):
 
     if not metode:
         return JsonResponse({'status': 'error', 'message': 'Metode pembayaran wajib diisi.'}, status=400)
+
     if metode in ['BRI', 'BCA', 'Mandiri'] and not bukti_transfer:
         return JsonResponse({'status': 'error', 'message': 'Bukti transfer wajib untuk metode bank.'}, status=400)
 
     try:
-        # 1. Update Pembelian
+        # =====================
+        # UPDATE PEMBELIAN
+        # =====================
         pembelian.metode_pembayaran = metode
         if bukti_transfer:
             pembelian.bukti_transfer = bukti_transfer
         pembelian.status = 'CONFIRMED'
-        pembelian.save() # Simpan perubahan status & bukti dulu
+        pembelian.save()
 
-        # --- PERBAIKAN DI SINI: Generate QR per Seat ---
-        # 2. Generate QR Code UNTUK SETIAP KURSI
-        seats_in_purchase = pembelian.seats.all() 
-        for seat in seats_in_purchase:
-            # Buat data unik untuk QR (misal: order_id + seat_id)
-            qr_data_string = f"SERVETIX-{pembelian.order_id}-{seat.id}" 
-            seat.qrcode_data = qr_data_string
-            
-            qr_file = generate_qr_code(qr_data_string)
-            # Simpan file QR ke objek Seat
-            seat.file_qr_code.save(qr_file.name, qr_file, save=True)
-        # --- AKHIR PERBAIKAN ---
+        # =====================
+        # GENERATE QR PER TIKET
+        # =====================
+        etickets = []
 
-        # 4. Berhasil!
+        for seat in pembelian.seats.all():
+            qr_data = f"SERVETIX|{pembelian.order_id}|SEAT-{seat.id}"
+            seat.qrcode_data = qr_data
+
+            qr_file = generate_qr_code(qr_data)
+            filename = f"{pembelian.order_id}_seat_{seat.id}.png"
+
+            seat.file_qr_code.save(filename, qr_file, save=True)
+
+            etickets.append({
+                "seat": f"{seat.row}{seat.col}",
+                "category": seat.category.name,
+                "qr_url": seat.file_qr_code.url
+            })
+
+        # =====================
+        # RESPONSE KE FRONTEND
+        # =====================
         return JsonResponse({
-            'status': 'success', 
-            'message': f'Pembayaran {pembelian.order_id} dikonfirmasi. E-Ticket dikirim ke email.',
-            'order_id': pembelian.order_id,
-            'redirect_url': f'/payment/sukses/{pembelian.order_id}/' 
+            "status": "success",
+            "message": "Pembayaran berhasil, e-ticket siap.",
+            "order_id": pembelian.order_id,
+            "tickets": etickets
         }, status=200)
 
     except Exception as e:
-        print(f"Processing Error (per ticket QR): {str(e)}")
-        return JsonResponse({'status': 'error', 'message': f'Pemrosesan pembayaran gagal.'}, status=500)
+        print("ERROR PEMBAYARAN:", e)
+        return JsonResponse({
+            "status": "error",
+            "message": "Terjadi kesalahan saat memproses pembayaran."
+        }, status=500)
+
     
 @require_POST
 @csrf_exempt

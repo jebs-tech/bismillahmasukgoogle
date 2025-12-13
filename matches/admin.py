@@ -16,11 +16,9 @@ class TeamAdmin(admin.ModelAdmin):
 
 @admin.register(Match)
 class MatchAdmin(admin.ModelAdmin):
-    # Field tim sudah disinkronkan di list_display
-    list_display = ('title', 'venue', 'start_time', 'price_from', 'team_a', 'team_b') 
-    list_filter = ('venue', 'start_time')
-    search_fields = ('title',)
-    # Anda mungkin perlu menambahkan fields tim ke fieldsets jika Anda mengedit Match di admin
+    list_display = ('title', 'venue', 'start_time', 'price_from', 'team_a', 'team_b')
+    readonly_fields = ('price_from',)
+
     fieldsets = (
         (None, {'fields': ('title', 'venue', 'start_time', 'price_from', 'description')}),
         ('Teams', {'fields': ('team_a', 'team_b')}),

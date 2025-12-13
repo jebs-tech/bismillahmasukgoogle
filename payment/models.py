@@ -13,6 +13,11 @@ from matches.models import Match, Seat
 
 # Model Pembelian/Transaksi (menggantikan user.Purchase dan matches.Booking)
 class Pembelian(models.Model):
+    qr_code = models.ImageField(
+        upload_to='qrcode/',
+        null=True,
+        blank=True
+    )
     STATUS_CHOICES = (
         ('PENDING', 'Menunggu Pembayaran'),
         ('CONFIRMED', 'Terbayar'),
