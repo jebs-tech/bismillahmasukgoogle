@@ -121,204 +121,234 @@
 {{ max_tiket_per_transaksi|json_script:"max-tiket-data" }}
 
 <script>
-    // --- DATA DINAMIS DARI FRONT-END ---
-    const selectKategori = document.getElementById('kategori_tempat_duduk');
-    const displayHargaSatuan = document.getElementById('harga-satuan-display');
-    const btnKonfirmasi = document.getElementById('btn-konfirmasi-total');
-    
-    // Variabel yang diambil dari konteks Django, hanya untuk MAX_TIKET dan CSRF
-    const MAX_TIKET_PER_TRANSAKSI = parseInt(document.getElementById('max-tiket-data').textContent) || 5;
-    const CSRF_TOKEN = document.querySelector('[name=csrfmiddlewaretoken]').value;
-    
-    let HARGA_SATUAN = 0; // Diinisialisasi di sini
-    let KATEGORI_TERPILIH = '';
-    let jumlahTiket = 1;
-    
-    const containerTambahan = document.getElementById('container-tiket-tambahan');
-    const btnTambah = document.getElementById('tambah-tiket');
-    const modalKonfirmasi = document.getElementById('modal-konfirmasi');
-    const btnLanjutPembayaran = document.getElementById('btn-lanjut-pembayaran');
-    const maxTiketInfo = document.getElementById('max-tiket-info');
-
-
-    // Fungsi untuk memformat mata uang
-    function formatRupiah(number) {
-        return new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-            minimumFractionDigits: 0
-        }).format(number);
-    }
-
-    // Event Listener untuk mengupdate harga saat kategori dipilih
-    selectKategori.addEventListener('change', function() {
-        const selectedOption = this.options[this.selectedIndex];
+    // Pastikan DOM sudah ready sebelum menjalankan script
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- DATA DINAMIS DARI FRONT-END ---
+        const selectKategori = document.getElementById('kategori_tempat_duduk');
+        const displayHargaSatuan = document.getElementById('harga-satuan-display');
+        const btnKonfirmasi = document.getElementById('btn-konfirmasi-total');
         
-        HARGA_SATUAN = parseInt(selectedOption.getAttribute('data-price')) || 0;
-        KATEGORI_TERPILIH = selectedOption.getAttribute('data-name');
-        
-        displayHargaSatuan.textContent = "Harga Satuan: " + formatRupiah(HARGA_SATUAN);
-        displayHargaSatuan.classList.remove('hidden');
-
-        // Aktifkan tombol konfirmasi jika harga valid
-        if (HARGA_SATUAN > 0) {
-            btnKonfirmasi.disabled = false;
-        } else {
-            btnKonfirmasi.disabled = true;
-        }
-    });
-
-    // Fungsi untuk menambahkan form tiket (Sama seperti sebelumnya)
-    function addTicketForm() {
-        if (jumlahTiket < MAX_TIKET_PER_TRANSAKSI) {
-            jumlahTiket++;
-            const newTicketForm = document.createElement('div');
-            newTicketForm.className = 'border-t pt-4 mt-4';
-            newTicketForm.innerHTML = `
-                <h3 class="text-xl font-semibold text-gray-700 mb-4">Detail Pemegang Tiket ${jumlahTiket}</h3>
-                <div class="mb-4">
-                    <label for="nama_tiket_${jumlahTiket}" class="block text-sm font-medium text-gray-700">Nama (Pada Tiket ${jumlahTiket})</label>
-                    <input type="text" id="nama_tiket_${jumlahTiket}" name="nama_tiket_${jumlahTiket}" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-light-blue focus:border-brand-light-blue sm:text-sm">
-                </div>
-                <div class="mb-6">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Jenis Kelamin</label>
-                    <div class="flex space-x-4">
-                        <label class="inline-flex items-center">
-                            <input type="radio" name="jenis_kelamin_${jumlahTiket}" value="L" class="form-radio text-brand-light-blue focus:ring-brand-light-blue" checked>
-                            <span class="ml-2">Laki-laki (L)</span>
-                        </label>
-                        <label class="inline-flex items-center">
-                            <input type="radio" name="jenis_kelamin_${jumlahTiket}" value="P" class="form-radio text-brand-light-blue focus:ring-brand-light-blue">
-                            <span class="ml-2">Perempuan (P)</span>
-                        </label>
-                    </div>
-                </div>
-            `;
-            containerTambahan.appendChild(newTicketForm);
-            
-            if (jumlahTiket >= MAX_TIKET_PER_TRANSAKSI) {
-                btnTambah.classList.add('hidden');
-                maxTiketInfo.classList.remove('hidden');
-            }
-        }
-    }
-    btnTambah.addEventListener('click', addTicketForm);
-
-
-    // Event Listener Tombol Konfirmasi (Tampilkan Harga)
-    btnKonfirmasi.addEventListener('click', function() {
-        const form = document.getElementById('form-detail-pembeli');
-        const kategoriValue = selectKategori.value;
-        
-        if (!form.checkValidity() || HARGA_SATUAN <= 0 || !kategoriValue) {
-            alert("Harap pilih kategori tempat duduk dan isi semua kolom wajib.");
-            form.reportValidity();
-            if (!kategoriValue) {
-                selectKategori.focus();
-            }
-            return;
-        }
-
-        const totalHarga = jumlahTiket * HARGA_SATUAN;
-        
-        document.getElementById('modal-total-tiket').textContent = jumlahTiket;
-        document.getElementById('modal-kategori-kursi').textContent = KATEGORI_TERPILIH; // Menggunakan nama kategori yang dipilih
-        document.getElementById('modal-total-harga').textContent = formatRupiah(totalHarga);
-        
-        modalKonfirmasi.classList.remove('hidden');
-    });
-
-    // Event Listener Tombol Lanjutkan ke Pembayaran (AJAX Post)
-    btnLanjutPembayaran.addEventListener('click', function() {
-        const form = document.getElementById('form-detail-pembeli');
-        const formData = new FormData(form);
-        
-        // Validasi kategori sebelum mengirim
-        const kategoriValue = selectKategori.value;
-        const matchIdValue = document.getElementById('match_id').value;
-        
-        if (!kategoriValue || kategoriValue === '') {
-            alert('Harap pilih kategori tempat duduk terlebih dahulu.');
-            selectKategori.focus();
+        // Validasi elemen ditemukan
+        if (!selectKategori || !displayHargaSatuan || !btnKonfirmasi) {
+            console.error('Error: Elemen penting tidak ditemukan di DOM');
             return;
         }
         
-        if (!matchIdValue || matchIdValue === '') {
-            alert('Error: Match ID tidak ditemukan. Silakan refresh halaman dan coba lagi.');
-            return;
+        // Variabel yang diambil dari konteks Django, hanya untuk MAX_TIKET dan CSRF
+        const maxTiketDataEl = document.getElementById('max-tiket-data');
+        const MAX_TIKET_PER_TRANSAKSI = maxTiketDataEl ? parseInt(maxTiketDataEl.textContent) || 5 : 5;
+        const csrfTokenEl = document.querySelector('[name=csrfmiddlewaretoken]');
+        const CSRF_TOKEN = csrfTokenEl ? csrfTokenEl.value : '';
+        
+        if (!CSRF_TOKEN) {
+            console.error('Error: CSRF token tidak ditemukan');
         }
         
-        // Kumpulkan data tiket
-        const tickets = [];
-        for (let i = 1; i <= jumlahTiket; i++) {
-            tickets.push({
-                nama: formData.get(`nama_tiket_${i}`),
-                jenis_kelamin: formData.get(`jenis_kelamin_${i}`),
+        let HARGA_SATUAN = 0; // Diinisialisasi di sini
+        let KATEGORI_TERPILIH = '';
+        let jumlahTiket = 1;
+        
+        const containerTambahan = document.getElementById('container-tiket-tambahan');
+        const btnTambah = document.getElementById('tambah-tiket');
+        const modalKonfirmasi = document.getElementById('modal-konfirmasi');
+        const btnLanjutPembayaran = document.getElementById('btn-lanjut-pembayaran');
+        const maxTiketInfo = document.getElementById('max-tiket-info');
+
+        if (!containerTambahan || !btnTambah || !modalKonfirmasi || !btnLanjutPembayaran) {
+            console.error('Error: Beberapa elemen tidak ditemukan di DOM');
+            return;
+        }
+
+        // Fungsi untuk memformat mata uang
+        function formatRupiah(number) {
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                minimumFractionDigits: 0
+            }).format(number);
+        }
+
+        // Event Listener untuk mengupdate harga saat kategori dipilih
+        if (selectKategori) {
+            selectKategori.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                
+                HARGA_SATUAN = parseInt(selectedOption.getAttribute('data-price')) || 0;
+                KATEGORI_TERPILIH = selectedOption.getAttribute('data-name');
+                
+                displayHargaSatuan.textContent = "Harga Satuan: " + formatRupiah(HARGA_SATUAN);
+                displayHargaSatuan.classList.remove('hidden');
+
+                // Aktifkan tombol konfirmasi jika harga valid
+                if (HARGA_SATUAN > 0 && btnKonfirmasi) {
+                    btnKonfirmasi.disabled = false;
+                } else if (btnKonfirmasi) {
+                    btnKonfirmasi.disabled = true;
+                }
             });
         }
 
-        // Kumpulkan data pembeli dan pertandingan
-        const dataToSend = {
-            nama_lengkap: formData.get('nama_lengkap'),
-            email: formData.get('email'),
-            nomor_telepon: formData.get('nomor_telepon'),
-            tickets: tickets,
-            
-            // KUNCI BARU: Kirim Match ID dan Kategori ID
-            match_id: matchIdValue,
-            kategori_id: kategoriValue,
-
-            // KATEGORI TERPILIH untuk disimpan di model Tiket
-            kategori_terpilih: KATEGORI_TERPILIH, 
-        };
-        
-        console.log('Data yang akan dikirim:', dataToSend); // Debug log
-
-        // Kirim AJAX POST
-        fetch("{% url 'payment:simpan_pembelian_ajax' %}", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': CSRF_TOKEN 
-            },
-            body: JSON.stringify(dataToSend)
-        })
-        .then(response => {
-            if (!response.ok) {
-                // Tangani status non-200
-                return response.json().then(err => {
-                    // Mencoba menangkap error JSON dari server
-                    throw new Error(`Gagal menyimpan: ${err.message || 'Status non-200'}`);
-                }).catch(() => {
-                     // Jika server tidak mengirim JSON (misal 500 Python error)
-                     throw new Error(`Server returned status: ${response.status}. Cek konsol server.`);
-                });
+        // Fungsi untuk menambahkan form tiket (Sama seperti sebelumnya)
+        function addTicketForm() {
+            if (jumlahTiket < MAX_TIKET_PER_TRANSAKSI) {
+                jumlahTiket++;
+                const newTicketForm = document.createElement('div');
+                newTicketForm.className = 'border-t pt-4 mt-4';
+                newTicketForm.innerHTML = `
+                    <h3 class="text-xl font-semibold text-gray-700 mb-4">Detail Pemegang Tiket ${jumlahTiket}</h3>
+                    <div class="mb-4">
+                        <label for="nama_tiket_${jumlahTiket}" class="block text-sm font-medium text-gray-700">Nama (Pada Tiket ${jumlahTiket})</label>
+                        <input type="text" id="nama_tiket_${jumlahTiket}" name="nama_tiket_${jumlahTiket}" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-light-blue focus:border-brand-light-blue sm:text-sm">
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Jenis Kelamin</label>
+                        <div class="flex space-x-4">
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="jenis_kelamin_${jumlahTiket}" value="L" class="form-radio text-brand-light-blue focus:ring-brand-light-blue" checked>
+                                <span class="ml-2">Laki-laki (L)</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="jenis_kelamin_${jumlahTiket}" value="P" class="form-radio text-brand-light-blue focus:ring-brand-light-blue">
+                                <span class="ml-2">Perempuan (P)</span>
+                            </label>
+                        </div>
+                    </div>
+                `;
+                containerTambahan.appendChild(newTicketForm);
+                
+                if (jumlahTiket >= MAX_TIKET_PER_TRANSAKSI) {
+                    btnTambah.classList.add('hidden');
+                    maxTiketInfo.classList.remove('hidden');
+                }
             }
-            return response.json();
-        })
-        .then(data => {
-            if (data.status === 'success') {
-                modalKonfirmasi.classList.add('hidden');
-                // Redirect ke halaman Detail Pembayaran dengan Order ID dari server
-                let url = "{% url 'payment:detail_pembayaran' order_id='0' %}".replace('0', data.order_id);
-                window.location.href = url;
-            } else {
-                alert('Gagal menyimpan data pembelian: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Terjadi kesalahan saat berkomunikasi dengan server. Cek konsol untuk detail: ' + error.message);
-        });
-    });
-
-    // Event Listener untuk menutup modal saat klik di luar
-    modalKonfirmasi.addEventListener('click', function(e) {
-        if (e.target === modalKonfirmasi) {
-            modalKonfirmasi.classList.add('hidden');
         }
-    });
+        if (btnTambah) {
+            btnTambah.addEventListener('click', addTicketForm);
+        }
 
+
+        // Event Listener Tombol Konfirmasi (Tampilkan Harga)
+        if (btnKonfirmasi) {
+            btnKonfirmasi.addEventListener('click', function() {
+                const form = document.getElementById('form-detail-pembeli');
+                const kategoriValue = selectKategori.value;
+                
+                if (!form.checkValidity() || HARGA_SATUAN <= 0 || !kategoriValue) {
+                    alert("Harap pilih kategori tempat duduk dan isi semua kolom wajib.");
+                    form.reportValidity();
+                    if (!kategoriValue) {
+                        selectKategori.focus();
+                    }
+                    return;
+                }
+
+                const totalHarga = jumlahTiket * HARGA_SATUAN;
+                
+                document.getElementById('modal-total-tiket').textContent = jumlahTiket;
+                document.getElementById('modal-kategori-kursi').textContent = KATEGORI_TERPILIH; // Menggunakan nama kategori yang dipilih
+                document.getElementById('modal-total-harga').textContent = formatRupiah(totalHarga);
+                
+                if (modalKonfirmasi) {
+                    modalKonfirmasi.classList.remove('hidden');
+                }
+            });
+        }
+
+        // Event Listener Tombol Lanjutkan ke Pembayaran (AJAX Post)
+        if (btnLanjutPembayaran) {
+            btnLanjutPembayaran.addEventListener('click', function() {
+                const form = document.getElementById('form-detail-pembeli');
+                const formData = new FormData(form);
+                
+                // Validasi kategori sebelum mengirim
+                const kategoriValue = selectKategori.value;
+                const matchIdValue = document.getElementById('match_id').value;
+                
+                if (!kategoriValue || kategoriValue === '') {
+                    alert('Harap pilih kategori tempat duduk terlebih dahulu.');
+                    selectKategori.focus();
+                    return;
+                }
+                
+                if (!matchIdValue || matchIdValue === '') {
+                    alert('Error: Match ID tidak ditemukan. Silakan refresh halaman dan coba lagi.');
+                    return;
+                }
+                
+                // Kumpulkan data tiket
+                const tickets = [];
+                for (let i = 1; i <= jumlahTiket; i++) {
+                    tickets.push({
+                        nama: formData.get(`nama_tiket_${i}`),
+                        jenis_kelamin: formData.get(`jenis_kelamin_${i}`),
+                    });
+                }
+
+                // Kumpulkan data pembeli dan pertandingan
+                const dataToSend = {
+                    nama_lengkap: formData.get('nama_lengkap'),
+                    email: formData.get('email'),
+                    nomor_telepon: formData.get('nomor_telepon'),
+                    tickets: tickets,
+                    
+                    // KUNCI BARU: Kirim Match ID dan Kategori ID
+                    match_id: matchIdValue,
+                    kategori_id: kategoriValue,
+
+                    // KATEGORI TERPILIH untuk disimpan di model Tiket
+                    kategori_terpilih: KATEGORI_TERPILIH, 
+                };
+                
+                console.log('Data yang akan dikirim:', dataToSend); // Debug log
+
+                // Kirim AJAX POST
+                fetch("{% url 'payment:simpan_pembelian_ajax' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': CSRF_TOKEN 
+                    },
+                    body: JSON.stringify(dataToSend)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        // Tangani status non-200
+                        return response.json().then(err => {
+                            // Mencoba menangkap error JSON dari server
+                            throw new Error(`Gagal menyimpan: ${err.message || 'Status non-200'}`);
+                        }).catch(() => {
+                             // Jika server tidak mengirim JSON (misal 500 Python error)
+                             throw new Error(`Server returned status: ${response.status}. Cek konsol server.`);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.status === 'success') {
+                        modalKonfirmasi.classList.add('hidden');
+                        // Redirect ke halaman Detail Pembayaran dengan Order ID dari server
+                        let url = "{% url 'payment:detail_pembayaran' order_id='0' %}".replace('0', data.order_id);
+                        window.location.href = url;
+                    } else {
+                        alert('Gagal menyimpan data pembelian: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Terjadi kesalahan saat berkomunikasi dengan server. Cek konsol untuk detail: ' + error.message);
+                });
+            }); // End btnLanjutPembayaran event listener
+        }
+
+        // Event Listener untuk menutup modal saat klik di luar
+        if (modalKonfirmasi) {
+            modalKonfirmasi.addEventListener('click', function(e) {
+                if (e.target === modalKonfirmasi) {
+                    modalKonfirmasi.classList.add('hidden');
+                }
+            });
+        }
+    }); // End DOMContentLoaded
 </script>
 
 {% endblock %}
