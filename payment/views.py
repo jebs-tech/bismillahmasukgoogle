@@ -57,18 +57,39 @@ def detail_pembeli_view(request):
 # -----------------------------
 
 @require_POST
+@transaction.atomic
 def simpan_pembelian_ajax(request):
     try:
         data = json.loads(request.body)
+        print(f"DEBUG: Data received: {data}")  # Debug log
 
-        match_id = data.get("match_id")
-        kategori_id = data.get("kategori_id")
+        # Convert ke integer jika string
+        try:
+            match_id = int(data.get("match_id")) if data.get("match_id") else None
+            kategori_id = int(data.get("kategori_id")) if data.get("kategori_id") else None
+        except (ValueError, TypeError) as e:
+            return JsonResponse({
+                "status": "error",
+                "message": f"Format match_id atau kategori_id tidak valid: {str(e)}"
+            }, status=400)
+
         tickets = data.get("tickets")
 
         if not match_id or not kategori_id or not tickets:
             return JsonResponse({
                 "status": "error",
                 "message": "Data tidak lengkap"
+            }, status=400)
+
+        # Validasi data pembeli
+        nama_lengkap = data.get("nama_lengkap", "").strip()
+        email = data.get("email", "").strip()
+        nomor_telepon = data.get("nomor_telepon", "").strip()
+
+        if not nama_lengkap or not email or not nomor_telepon:
+            return JsonResponse({
+                "status": "error",
+                "message": "Nama lengkap, email, dan nomor telepon wajib diisi"
             }, status=400)
 
         match = Match.objects.get(id=match_id)
@@ -78,43 +99,92 @@ def simpan_pembelian_ajax(request):
         jumlah_tiket = len(tickets)
         total_harga = jumlah_tiket * kategori.price
 
-        # Cari seat yang tersedia untuk kategori ini
-        available_seats = Seat.objects.filter(
+        # Cek jumlah seat yang tersedia SEBELUM mengambil
+        total_available = Seat.objects.filter(
             match=match,
             category=kategori,
             is_booked=False
-        )[:jumlah_tiket]
+        ).count()
 
-        if available_seats.count() < jumlah_tiket:
+        print(f"DEBUG: Match ID: {match_id}, Kategori ID: {kategori_id}, Total available: {total_available}, Dibutuhkan: {jumlah_tiket}")
+
+        if total_available < jumlah_tiket:
             return JsonResponse({
                 "status": "error",
-                "message": f"Tidak cukup kursi tersedia. Tersedia: {available_seats.count()}, Dibutuhkan: {jumlah_tiket}"
+                "message": f"Tidak cukup kursi tersedia. Tersedia: {total_available}, Dibutuhkan: {jumlah_tiket}"
+            }, status=400)
+
+        # Ambil seat yang tersedia
+        available_seats = list(Seat.objects.filter(
+            match=match,
+            category=kategori,
+            is_booked=False
+        )[:jumlah_tiket])
+
+        if len(available_seats) < jumlah_tiket:
+            return JsonResponse({
+                "status": "error",
+                "message": f"Tidak cukup kursi tersedia saat ini. Silakan coba lagi."
             }, status=400)
 
         # Buat Pembelian
-        pembelian = Pembelian.objects.create(
-            match=match,
-            user=request.user if request.user.is_authenticated else None,
-            nama_lengkap_pembeli=data.get("nama_lengkap"),
-            email=data.get("email"),
-            nomor_telepon=data.get("nomor_telepon"),
-            total_price=total_harga,
-            status='PENDING'
-        )
+        try:
+            pembelian = Pembelian.objects.create(
+                match=match,
+                user=request.user if request.user.is_authenticated else None,
+                nama_lengkap_pembeli=nama_lengkap,
+                email=email,
+                nomor_telepon=nomor_telepon,
+                total_price=total_harga,
+                status='PENDING'
+            )
+            print(f"DEBUG: Pembelian created with order_id: {pembelian.order_id}")
+        except Exception as e:
+            print(f"ERROR creating Pembelian: {e}")
+            print(traceback.format_exc())
+            return JsonResponse({
+                "status": "error",
+                "message": f"Gagal membuat pembelian: {str(e)}"
+            }, status=500)
 
         # Hubungkan seat ke pembelian dan update status booked
-        seat_list = list(available_seats)
-        pembelian.seats.set(seat_list)
+        try:
+            pembelian.seats.set(available_seats)
+            print(f"DEBUG: {len(available_seats)} seats linked to pembelian")
+        except Exception as e:
+            print(f"ERROR linking seats: {e}")
+            print(traceback.format_exc())
+            return JsonResponse({
+                "status": "error",
+                "message": f"Gagal menghubungkan seat: {str(e)}"
+            }, status=500)
         
         # Update is_booked untuk setiap seat
-        for seat in seat_list:
-            seat.is_booked = True
-            seat.save()
+        try:
+            for seat in available_seats:
+                seat.is_booked = True
+                seat.save()
+            print(f"DEBUG: {len(available_seats)} seats marked as booked")
+        except Exception as e:
+            print(f"ERROR updating seat status: {e}")
+            print(traceback.format_exc())
+            return JsonResponse({
+                "status": "error",
+                "message": f"Gagal update status seat: {str(e)}"
+            }, status=500)
 
         return JsonResponse({
             "status": "success",
             "order_id": pembelian.order_id
         })
+
+    except (ValueError, TypeError) as e:
+        print(f"ERROR ValueError/TypeError: {e}")
+        print(traceback.format_exc())
+        return JsonResponse({
+            "status": "error",
+            "message": f"Format data tidak valid: {str(e)}"
+        }, status=400)
 
     except Match.DoesNotExist:
         return JsonResponse({"status": "error", "message": "Match tidak ditemukan"}, status=404)
