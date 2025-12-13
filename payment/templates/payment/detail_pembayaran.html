@@ -101,36 +101,76 @@
 
 <div id="modal-eticket" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
     <div class="relative top-5 mx-auto p-5 border w-96 max-w-lg shadow-lg rounded-md bg-white">
-        <h3 class="text-xl font-bold text-gray-900 mb-4 border-b pb-2">E-Ticket Anda Siap!</h3>
-        <p class="text-sm text-gray-600 mb-4">Tiket ini telah diproses dan akan dikirim ke email **{{ pembelian.email }}**.</p>
+        <h3 class="text-xl font-bold text-gray-900 mb-4 border-b pb-2">
+            E-Ticket Anda Siap!
+        </h3>
+
+        <p class="text-sm text-gray-600 mb-4">
+            Tiket ini telah diproses dan akan dikirim ke email 
+            <b>{{ pembelian.email }}</b>.
+        </p>
         
         <div id="container-etickets" class="space-y-6">
-            {% for seat in pembelian.seats.all %} <div class="p-3 border rounded-lg bg-white shadow-md">
+            {% for seat in pembelian.seats.all %}
+            <div class="p-3 border rounded-lg bg-white shadow-md">
+
+                <!-- HEADER TIKET -->
                 <div class="flex items-center space-x-3 mb-3 p-2 bg-brand-gold bg-opacity-30 rounded-md">
                     <span class="text-3xl text-brand-dark-blue">🎟️</span> 
                     <div>
-                        <p class="font-bold text-brand-dark-blue">{{ pembelian.match.title }}</p>
-                        <p class="text-xs text-gray-700">{{ pembelian.match.venue.name }} | {{ pembelian.match.start_time|date:"j F H:i" }}</p>
+                        <p class="font-bold text-brand-dark-blue">
+                            {{ pembelian.match.title }}
+                        </p>
+                        <p class="text-xs text-gray-700">
+                            {{ pembelian.match.venue.name }} | 
+                            {{ pembelian.match.start_time|date:"j F H:i" }}
+                        </p>
                     </div>
                 </div>
 
-                <div class="flex justify-between items-center mt-3">
-                    <div class="text-left">
-                        <p class="text-sm font-semibold text-gray-800">Order ID: <span class="font-mono text-brand-orange">{{ pembelian.order_id }}</span></p>
-                        <p class="text-sm font-semibold text-gray-800">Kursi: {{ seat.row }}{{ seat.col }}</p>
-                        <p class="text-sm text-gray-600">Kategori: {{ seat.category.name }}</p>
-                    </div>
-                    
+                <!-- DETAIL -->
+                <div class="text-sm text-gray-800 space-y-1">
+                    <p><b>Order ID:</b> 
+                        <span class="font-mono text-brand-orange">
+                            {{ pembelian.order_id }}
+                        </span>
+                    </p>
+                    <p><b>Kursi:</b> {{ seat.row }}{{ seat.col }}</p>
+                    <p><b>Kategori:</b> {{ seat.category.name }}</p>
                 </div>
+
+                <!-- QR CODE -->
+                <div class="mt-4 text-center">
+                    {% if seat.file_qr_code %}
+                        <img
+                            id="qr-img-{{ seat.id }}"
+                            src="{{ seat.file_qr_code.url }}"
+                            alt="QR Ticket"
+                            class="mx-auto w-40 h-40 border rounded shadow"
+                        >
+                        <a
+                            href="{{ seat.file_qr_code.url }}"
+                            download
+                            class="inline-block mt-2 text-sm text-brand-light-blue hover:underline"
+                        >
+                            Unduh QR Tiket
+                        </a>
+                    {% else %}
+                        <p class="text-sm text-gray-500">
+                            QR sedang diproses...
+                        </p>
+                    {% endif %}
+                </div>
+
             </div>
             {% endfor %}
         </div>
 
-        <div class="items-center px-4 py-3 border-t mt-4 flex justify-between">
-            <button id="btn-unduh-tiket" class="px-4 py-2 bg-gray-200 text-gray-700 text-base font-medium rounded-md hover:bg-gray-300">
-                <span class="flex items-center"><svg class="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>Unduh</span>
-            </button>
-            <button id="btn-tutup-eticket-modal" class="px-4 py-2 bg-brand-light-blue text-white text-base font-medium rounded-md shadow-sm hover:bg-brand-dark-blue">
+        <!-- FOOTER -->
+        <div class="items-center px-4 py-3 border-t mt-4 flex justify-end">
+            <button
+                id="btn-tutup-eticket-modal"
+                class="px-4 py-2 bg-brand-light-blue text-white text-base font-medium rounded-md shadow-sm hover:bg-brand-dark-blue">
                 Tutup
             </button>
         </div>

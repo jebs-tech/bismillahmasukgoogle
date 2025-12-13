@@ -1,5 +1,7 @@
 from django.urls import path
 from . import views
+from django.conf import settings
+from django.conf.urls.static import static
 
 app_name = 'payment'
 
@@ -17,3 +19,5 @@ urlpatterns = [
     path('api/proses-bayar/<str:order_id>/', views.proses_bayar_ajax, name='proses_bayar_ajax'),
     path('api/check-voucher/', views.check_voucher_ajax, name='check_voucher_ajax'),
 ]
+
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
