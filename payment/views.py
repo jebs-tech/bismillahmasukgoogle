@@ -54,239 +54,59 @@ def detail_pembeli_view(request):
 # -----------------------------
 
 @require_POST
-@csrf_exempt 
-@transaction.atomic # WAJIB di atas fungsi
 def simpan_pembelian_ajax(request):
-    """Endpoint AJAX: Pilih kategori & jumlah, server cari kursi, dan terapkan diskon voucher."""
-    
     try:
-        # Parse JSON dengan error handling yang lebih baik
-        try:
-            body_str = request.body.decode('utf-8')
-            data = json.loads(body_str)
-        except UnicodeDecodeError as e:
-            print(f"[ERROR] Unicode decode error: {e}")
-            return JsonResponse({'status': 'error', 'message': 'Format data tidak valid (encoding error).'}, status=400)
-        except json.JSONDecodeError as e:
-            print(f"[ERROR] JSON decode error: {e}")
-            print(f"[ERROR] Request body: {request.body}")
-            return JsonResponse({'status': 'error', 'message': 'Format data JSON tidak valid.'}, status=400)
-        
-        voucher_code = data.get('kode_voucher', '').strip() if data.get('kode_voucher') else ''
-        
-        # Debug: print data yang diterima (hapus di production)
-        print(f"[DEBUG] Data received: {data}")
-        print(f"[DEBUG] Request method: {request.method}")
-        print(f"[DEBUG] User authenticated: {hasattr(request, 'user') and request.user.is_authenticated if hasattr(request, 'user') else False}")
-        
-        required_fields = ['nama_lengkap', 'email', 'nomor_telepon', 'match_id', 'kategori_id', 'tickets']
-        # 1. Validasi Input Dasar
-        missing_fields = [field for field in required_fields if field not in data]
-        if missing_fields:
+        data = json.loads(request.body)
+
+        match_id = data.get("match_id")
+        kategori_id = data.get("kategori_id")
+        tickets = data.get("tickets")
+
+        if not match_id or not kategori_id or not tickets:
             return JsonResponse({
-                'status': 'error', 
-                'message': f'Data input tidak lengkap. Field yang kurang: {", ".join(missing_fields)}'
+                "status": "error",
+                "message": "Data tidak lengkap"
             }, status=400)
-        
-        # Validasi bahwa field tidak kosong
-        try:
-            nama_lengkap = str(data['nama_lengkap']).strip() if data.get('nama_lengkap') else ''
-            email = str(data['email']).strip() if data.get('email') else ''
-            nomor_telepon = str(data['nomor_telepon']).strip() if data.get('nomor_telepon') else ''
-        except (AttributeError, TypeError) as e:
-            print(f"[ERROR] Error saat memproses field: {e}")
-            return JsonResponse({'status': 'error', 'message': 'Format data tidak valid.'}, status=400)
-        
-        # Validasi panjang field
-        if not nama_lengkap:
-            return JsonResponse({'status': 'error', 'message': 'Nama lengkap tidak boleh kosong.'}, status=400)
-        if len(nama_lengkap) > 100:
-            return JsonResponse({'status': 'error', 'message': 'Nama lengkap terlalu panjang (maksimal 100 karakter).'}, status=400)
-        if not email:
-            return JsonResponse({'status': 'error', 'message': 'Email tidak boleh kosong.'}, status=400)
-        if len(email) > 254:
-            return JsonResponse({'status': 'error', 'message': 'Email terlalu panjang.'}, status=400)
-        if '@' not in email:  # Validasi email sederhana
-            return JsonResponse({'status': 'error', 'message': 'Format email tidak valid.'}, status=400)
-        if not nomor_telepon:
-            return JsonResponse({'status': 'error', 'message': 'Nomor telepon tidak boleh kosong.'}, status=400)
-        if len(nomor_telepon) > 20:
-            return JsonResponse({'status': 'error', 'message': 'Nomor telepon terlalu panjang (maksimal 20 karakter).'}, status=400)
-            
-        # Validasi tickets array
-        if not isinstance(data['tickets'], list):
-            return JsonResponse({'status': 'error', 'message': 'Data tiket tidak valid.'}, status=400)
-            
-        jumlah_tiket_diminta = len(data['tickets'])
-        if jumlah_tiket_diminta <= 0:
-            return JsonResponse({'status': 'error', 'message': 'Jumlah tiket tidak valid.'}, status=400)
-        if jumlah_tiket_diminta > 10:  # Batasi maksimal tiket per transaksi
-            return JsonResponse({'status': 'error', 'message': 'Maksimal 10 tiket per transaksi.'}, status=400)
 
-        # 2. Ambil Objek Match dan Kategori
-        try:
-            # Validasi match_id dan kategori_id tidak kosong atau None
-            match_id_raw = data.get('match_id')
-            kategori_id_raw = data.get('kategori_id')
-            
-            if not match_id_raw or match_id_raw == '' or match_id_raw is None:
-                return JsonResponse({'status': 'error', 'message': 'Match ID tidak boleh kosong.'}, status=400)
-            if not kategori_id_raw or kategori_id_raw == '' or kategori_id_raw is None:
-                return JsonResponse({'status': 'error', 'message': 'Kategori ID tidak boleh kosong. Pastikan Anda sudah memilih kategori kursi.'}, status=400)
-            
-            # Konversi ke integer untuk memastikan tipe data benar
-            try:
-                match_id = int(match_id_raw)
-                kategori_id = int(kategori_id_raw)
-                print(f"[DEBUG] Parsed IDs - match_id: {match_id}, kategori_id: {kategori_id}")
-            except (ValueError, TypeError) as e:
-                print(f"[DEBUG] Error parsing IDs - match_id_raw: {match_id_raw}, kategori_id_raw: {kategori_id_raw}, error: {e}")
-                return JsonResponse({
-                    'status': 'error', 
-                    'message': f'Format ID tidak valid. Match ID: "{match_id_raw}", Kategori ID: "{kategori_id_raw}". Pastikan keduanya adalah angka.'
-                }, status=400)
-            
-            try:
-                match = Match.objects.get(id=match_id)
-            except Match.DoesNotExist:
-                print(f"[ERROR] Match dengan ID {match_id} tidak ditemukan")
-                return JsonResponse({'status': 'error', 'message': f'Pertandingan dengan ID {match_id} tidak ditemukan.'}, status=404)
-            
-            try:
-                kategori = SeatCategory.objects.get(id=kategori_id)
-            except SeatCategory.DoesNotExist:
-                print(f"[ERROR] Kategori dengan ID {kategori_id} tidak ditemukan")
-                return JsonResponse({'status': 'error', 'message': f'Kategori kursi dengan ID {kategori_id} tidak ditemukan.'}, status=404)
-            
-            # Validasi kategori memiliki price yang valid
-            if kategori.price is None or kategori.price < 0:
-                return JsonResponse({'status': 'error', 'message': f'Harga kategori {kategori.name} tidak valid.'}, status=400)
-            
-            print(f"[DEBUG] Found - Match: {match.title}, Kategori: {kategori.name}, Price: {kategori.price}")
-        except Exception as e:
-            print(f"[ERROR] Unexpected error saat mengambil Match/Kategori: {e}")
-            print(traceback.format_exc())
-            return JsonResponse({'status': 'error', 'message': f'Error saat mengambil data pertandingan/kategori: {str(e)}'}, status=500)
+        match = Match.objects.get(id=match_id)
+        kategori = Category.objects.get(id=kategori_id)
 
-        # 3. Cari Kursi Tersedia (select_for_update untuk mengunci kursi)
-        try:
-            available_seats = list(Seat.objects.select_for_update().filter(
-                match=match,
-                category=kategori,
-                is_booked=False
-            )[:jumlah_tiket_diminta])
-        except Exception as e:
-            print(f"Error saat mencari kursi: {e}")
-            print(traceback.format_exc())
-            return JsonResponse({'status': 'error', 'message': f'Error saat mencari kursi: {str(e)}'}, status=500)
+        order = Order.objects.create(
+            match=match,
+            kategori=kategori,
+            nama_lengkap=data.get("nama_lengkap"),
+            email=data.get("email"),
+            nomor_telepon=data.get("nomor_telepon"),
+            total_harga=len(tickets) * kategori.price
+        )
 
-        # Cek apakah kursi cukup
-        if len(available_seats) < jumlah_tiket_diminta:
-            return JsonResponse({'status': 'error', 'message': f'Maaf, hanya tersisa {len(available_seats)} tiket untuk kategori {kategori.name}.'}, status=409)
-
-        # 4. Hitung Total Harga
-        try:
-            total_harga_dasar = jumlah_tiket_diminta * int(kategori.price)
-            if total_harga_dasar < 0:
-                return JsonResponse({'status': 'error', 'message': 'Total harga tidak valid.'}, status=400)
-            if total_harga_dasar > 999999999:  # Batas maksimal untuk PositiveIntegerField
-                return JsonResponse({'status': 'error', 'message': 'Total harga terlalu besar.'}, status=400)
-        except (TypeError, ValueError) as e:
-            return JsonResponse({'status': 'error', 'message': f'Error menghitung total harga: {str(e)}'}, status=400)
-            
-        total_harga_final = total_harga_dasar
-        discount_amount = 0
-        applied_code = ""
-        
-        # 5. VALIDASI DAN APLIKASI VOUCHER
-        if voucher_code:
-            try:
-                discount_amount, error_message = validate_and_apply_voucher(
-                    voucher_code, 
-                    request.user if hasattr(request, 'user') else None, 
-                    float(total_harga_dasar)
-                )
-                
-                if error_message:
-                    # Jika ada error validasi voucher, kembalikan error 400
-                    return JsonResponse({'status': 'error', 'message': error_message}, status=400)
-                
-                if discount_amount > 0:
-                    total_harga_final = max(0, total_harga_dasar - discount_amount)  # Pastikan tidak negatif
-                    applied_code = voucher_code
-            except Exception as e:
-                print(f"Error saat validasi voucher: {e}")
-                print(traceback.format_exc())
-                return JsonResponse({'status': 'error', 'message': f'Error saat validasi voucher: {str(e)}'}, status=400)
-
-        # 6. Buat Objek Pembelian (Simpan HARGA FINAL dan KODE VOUCHER)
-        try:
-            # Pastikan total_harga_final adalah integer yang valid
-            total_price_int = int(round(total_harga_final))
-            if total_price_int < 0:
-                return JsonResponse({'status': 'error', 'message': 'Total harga tidak boleh negatif.'}, status=400)
-            if total_price_int > 2147483647:  # Batas maksimal PositiveIntegerField di beberapa database
-                return JsonResponse({'status': 'error', 'message': 'Total harga terlalu besar.'}, status=400)
-            
-            pembelian = Pembelian.objects.create(
-                user=request.user if hasattr(request, 'user') and request.user.is_authenticated else None,
-                match=match,
-                nama_lengkap_pembeli=nama_lengkap[:100],  # Pastikan tidak melebihi max_length
-                email=email[:254],  # Pastikan tidak melebihi max_length
-                nomor_telepon=nomor_telepon[:20],  # Pastikan tidak melebihi max_length
-                total_price=total_price_int,
-                kode_voucher=applied_code[:50] if applied_code else '',  # Pastikan tidak melebihi max_length
-                status='PENDING'
+        for t in tickets:
+            Ticket.objects.create(
+                order=order,
+                nama=t["nama"],
+                jenis_kelamin=t["jenis_kelamin"],
+                kategori=kategori
             )
-        except IntegrityError as e:
-            print(f"IntegrityError saat membuat Pembelian: {e}")
-            print(traceback.format_exc())
-            # Jika ada duplicate order_id, coba lagi (meskipun seharusnya tidak terjadi dengan retry logic di model)
-            return JsonResponse({'status': 'error', 'message': 'Error saat membuat pembelian. Silakan coba lagi.'}, status=500)
-        except Exception as e:
-            print(f"Error saat membuat Pembelian: {e}")
-            print(traceback.format_exc())
-            return JsonResponse({'status': 'error', 'message': f'Error saat membuat pembelian: {str(e)}'}, status=500)
-        
-        # 7. Asosiasikan Kursi dan Tandai is_booked=True
-        try:
-            if available_seats:
-                pembelian.seats.set(available_seats)
-                seat_ids_to_book = [seat.id for seat in available_seats]
-                Seat.objects.filter(id__in=seat_ids_to_book).update(is_booked=True)
-        except Exception as e:
-            print(f"Error saat mengasosiasikan kursi: {e}")
-            print(traceback.format_exc())
-            # Jika gagal mengasosiasikan kursi, hapus pembelian yang sudah dibuat
-            pembelian.delete()
-            return JsonResponse({'status': 'error', 'message': f'Error saat mengasosiasikan kursi: {str(e)}'}, status=500)
-        
-        # 8. Kirim Response Sukses
-        return JsonResponse({
-            'status': 'success', 
-            'message': 'Booking berhasil disimpan. Lanjut ke pembayaran.', 
-            'order_id': pembelian.order_id,
-            'total_harga': total_harga_final,
-            'discount_amount': discount_amount
-        }, status=200)
 
-    except IntegrityError as e: 
-         # IntegrityError bisa terjadi jika ada unique constraint yang dilanggar
-         print(f"[ERROR] IntegrityError saat menyimpan pembelian: {e}")
-         print(traceback.format_exc())
-         return JsonResponse({'status': 'error', 'message': 'Kesalahan integritas data. Silakan coba lagi.'}, status=409)
-    except Exception as e:
-        # Menangkap error Python lainnya yang tidak terduga
-        error_traceback = traceback.format_exc()
-        error_type = type(e).__name__
-        print(f"[ERROR] Unexpected error saat menyimpan pembelian: {error_type}: {e}")
-        print(f"[ERROR] Full traceback:\n{error_traceback}")
-        # Return error message yang lebih informatif untuk debugging
         return JsonResponse({
-            'status': 'error', 
-            'message': f'Terjadi kesalahan di server ({error_type}): {str(e)}. Silakan coba lagi atau hubungi administrator jika masalah berlanjut.'
+            "status": "success",
+            "order_id": order.id
+        })
+
+    except Match.DoesNotExist:
+        return JsonResponse({"status": "error", "message": "Match tidak ditemukan"}, status=404)
+
+    except Category.DoesNotExist:
+        return JsonResponse({"status": "error", "message": "Kategori tidak ditemukan"}, status=404)
+
+    except Exception as e:
+        print("ERROR simpan_pembelian_ajax:", e)
+        return JsonResponse({
+            "status": "error",
+            "message": "Internal Server Error"
         }, status=500)
 
+        
 def detail_pembayaran_view(request, order_id):
     pembelian = get_object_or_404(Pembelian, order_id=order_id, status='PENDING')
     
