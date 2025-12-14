@@ -171,6 +171,7 @@ def get_active_tickets(request):
     print(f"DEBUG get_active_tickets: Current time: {now}")
     
     # Query dengan prefetch untuk seats
+    # Filter: user harus sesuai, status CONFIRMED, dan match belum terjadi
     active_purchases = Pembelian.objects.filter(
         user=request.user,
         status='CONFIRMED',
@@ -183,7 +184,7 @@ def get_active_tickets(request):
     ).prefetch_related(
         'seats',
         'seats__category'
-    ).order_by('match__start_time')
+    ).order_by('-tanggal_pembelian', 'match__start_time')  # Urutkan berdasarkan tanggal pembelian terbaru dulu
     
     purchase_count = active_purchases.count()
     print(f"DEBUG get_active_tickets: Found {purchase_count} active purchases")

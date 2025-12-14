@@ -385,27 +385,46 @@ def proses_bayar_ajax(request, order_id):
             pembelian.bukti_transfer = bukti_transfer
         pembelian.status = 'CONFIRMED'
         
-        # Assign user jika user sudah login (untuk memastikan tiket muncul di dashboard)
+        # Assign user - PRIORITAS: user yang login > user dari email > user yang sudah ada > tetap None
+        user_assigned = None
+        
+        # 1. Cek apakah user sudah login (PRIORITAS TERTINGGI)
         if request.user.is_authenticated:
-            pembelian.user = request.user
-            print(f"DEBUG: User assigned to pembelian: {request.user.username} (ID: {request.user.id})")
-        else:
-            # Jika user tidak login, coba match berdasarkan email
+            user_assigned = request.user
+            print(f"DEBUG: User authenticated: {request.user.username} (ID: {request.user.id})")
+        # 2. Jika tidak login, coba match berdasarkan email
+        elif pembelian.email:
+            print(f"DEBUG: User not authenticated, checking email: {pembelian.email}")
             try:
                 user_by_email = User.objects.get(email=pembelian.email)
-                pembelian.user = user_by_email
+                user_assigned = user_by_email
                 print(f"DEBUG: User matched by email: {user_by_email.username} (ID: {user_by_email.id})")
             except User.DoesNotExist:
-                print(f"DEBUG: No user found with email {pembelian.email}, pembelian.user will remain None")
+                print(f"DEBUG: No user found with email {pembelian.email}")
             except User.MultipleObjectsReturned:
                 # Jika ada multiple user dengan email yang sama, ambil yang pertama
                 user_by_email = User.objects.filter(email=pembelian.email).first()
                 if user_by_email:
-                    pembelian.user = user_by_email
+                    user_assigned = user_by_email
                     print(f"DEBUG: Multiple users found, using first: {user_by_email.username} (ID: {user_by_email.id})")
         
+        # 3. Jika masih belum ada user, gunakan user yang sudah ada di pembelian (jika ada)
+        if not user_assigned and pembelian.user:
+            user_assigned = pembelian.user
+            print(f"DEBUG: Using existing user from pembelian: {user_assigned.username} (ID: {user_assigned.id})")
+        
+        # Assign user ke pembelian
+        if user_assigned:
+            pembelian.user = user_assigned
+            print(f"DEBUG: User assigned to pembelian: {user_assigned.username} (ID: {user_assigned.id})")
+        else:
+            print(f"WARNING: No user assigned to pembelian {pembelian.order_id}. Email: {pembelian.email}")
+        
         pembelian.save()
-        print(f"DEBUG: Pembelian saved - Order ID: {pembelian.order_id}, User: {pembelian.user}, Status: {pembelian.status}, Match: {pembelian.match.title if pembelian.match else 'None'}")
+        
+        # Verifikasi setelah save
+        pembelian.refresh_from_db()
+        print(f"DEBUG: Pembelian saved - Order ID: {pembelian.order_id}, User: {pembelian.user} ({pembelian.user.username if pembelian.user else 'None'}), Status: {pembelian.status}, Match: {pembelian.match.title if pembelian.match else 'None'}")
 
         # =====================
         # GENERATE QR PER TIKET

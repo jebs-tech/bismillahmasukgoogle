@@ -364,8 +364,8 @@
 
     function closeEticketModal() {
         document.getElementById('modal-eticket').classList.add('hidden');
-        // Refresh halaman untuk update tiket aktif
-        window.location.href = '/';
+        // Redirect ke dashboard dengan tab tiket aktif untuk memastikan tiket muncul
+        window.location.href = '/user/profile/?tab=active_tickets';
     }
 
     document.getElementById('btn-tutup-eticket-modal').addEventListener('click', closeEticketModal);
