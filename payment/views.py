@@ -386,15 +386,26 @@ def proses_bayar_ajax(request, order_id):
         pembelian.status = 'CONFIRMED'
         
         # Assign user jika user sudah login (untuk memastikan tiket muncul di dashboard)
-        # Update user bahkan jika sudah ada, untuk memastikan user yang login ter-assign
         if request.user.is_authenticated:
             pembelian.user = request.user
             print(f"DEBUG: User assigned to pembelian: {request.user.username} (ID: {request.user.id})")
         else:
-            print("DEBUG: User not authenticated, pembelian.user will remain as is")
+            # Jika user tidak login, coba match berdasarkan email
+            try:
+                user_by_email = User.objects.get(email=pembelian.email)
+                pembelian.user = user_by_email
+                print(f"DEBUG: User matched by email: {user_by_email.username} (ID: {user_by_email.id})")
+            except User.DoesNotExist:
+                print(f"DEBUG: No user found with email {pembelian.email}, pembelian.user will remain None")
+            except User.MultipleObjectsReturned:
+                # Jika ada multiple user dengan email yang sama, ambil yang pertama
+                user_by_email = User.objects.filter(email=pembelian.email).first()
+                if user_by_email:
+                    pembelian.user = user_by_email
+                    print(f"DEBUG: Multiple users found, using first: {user_by_email.username} (ID: {user_by_email.id})")
         
         pembelian.save()
-        print(f"DEBUG: Pembelian saved with user: {pembelian.user}, status: {pembelian.status}")
+        print(f"DEBUG: Pembelian saved - Order ID: {pembelian.order_id}, User: {pembelian.user}, Status: {pembelian.status}, Match: {pembelian.match.title if pembelian.match else 'None'}")
 
         # =====================
         # GENERATE QR PER TIKET

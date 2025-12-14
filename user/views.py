@@ -185,9 +185,20 @@ def get_active_tickets(request):
         'seats__category'
     ).order_by('match__start_time')
     
-    print(f"DEBUG get_active_tickets: Found {active_purchases.count()} active purchases")
+    purchase_count = active_purchases.count()
+    print(f"DEBUG get_active_tickets: Found {purchase_count} active purchases")
+    
+    # Debug: Tampilkan semua pembelian untuk user ini (termasuk yang tidak masuk filter)
+    all_user_purchases = Pembelian.objects.filter(user=request.user).select_related('match')
+    print(f"DEBUG get_active_tickets: Total purchases for user: {all_user_purchases.count()}")
+    for purchase in all_user_purchases:
+        match_time = purchase.match.start_time if purchase.match else None
+        is_future = match_time > now if match_time else False
+        print(f"DEBUG: Purchase {purchase.order_id} - User: {purchase.user}, Status: {purchase.status}, Match: {purchase.match.title if purchase.match else 'None'}, Match Time: {match_time}, Is Future: {is_future}")
+    
+    # Debug: Tampilkan purchases yang masuk filter
     for purchase in active_purchases:
-        print(f"DEBUG: Purchase {purchase.order_id} - User: {purchase.user}, Status: {purchase.status}, Match: {purchase.match.title if purchase.match else 'None'}")
+        print(f"DEBUG: Active Purchase {purchase.order_id} - Seats count: {purchase.seats.count()}")
     
     context = {
         'active_purchases': active_purchases
