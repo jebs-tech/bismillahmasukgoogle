@@ -203,16 +203,23 @@ def simpan_pembelian_ajax(request):
 
         # Buat Pembelian
         try:
+            # Assign user jika sudah login
+            user_obj = request.user if request.user.is_authenticated else None
+            if user_obj:
+                print(f"DEBUG: User authenticated: {user_obj.username} (ID: {user_obj.id})")
+            else:
+                print("DEBUG: User not authenticated during pembelian creation")
+            
             pembelian = Pembelian.objects.create(
                 match=match,
-                user=request.user if request.user.is_authenticated else None,
+                user=user_obj,
                 nama_lengkap_pembeli=nama_lengkap,
                 email=email,
                 nomor_telepon=nomor_telepon,
                 total_price=total_harga,
                 status='PENDING'
             )
-            print(f"DEBUG: Pembelian created with order_id: {pembelian.order_id}")
+            print(f"DEBUG: Pembelian created with order_id: {pembelian.order_id}, user: {pembelian.user}")
         except Exception as e:
             print(f"ERROR creating Pembelian: {e}")
             print(traceback.format_exc())
@@ -377,10 +384,17 @@ def proses_bayar_ajax(request, order_id):
         if bukti_transfer:
             pembelian.bukti_transfer = bukti_transfer
         pembelian.status = 'CONFIRMED'
+        
         # Assign user jika user sudah login (untuk memastikan tiket muncul di dashboard)
-        if request.user.is_authenticated and not pembelian.user:
+        # Update user bahkan jika sudah ada, untuk memastikan user yang login ter-assign
+        if request.user.is_authenticated:
             pembelian.user = request.user
+            print(f"DEBUG: User assigned to pembelian: {request.user.username} (ID: {request.user.id})")
+        else:
+            print("DEBUG: User not authenticated, pembelian.user will remain as is")
+        
         pembelian.save()
+        print(f"DEBUG: Pembelian saved with user: {pembelian.user}, status: {pembelian.status}")
 
         # =====================
         # GENERATE QR PER TIKET

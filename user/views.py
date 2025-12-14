@@ -161,7 +161,16 @@ def get_active_tickets(request):
     """
     Mengambil tiket untuk pertandingan yang BELUM TERJADI.
     """
+    from payment.models import Pembelian
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
     now = timezone.now()
+    print(f"DEBUG get_active_tickets: User: {request.user.username} (ID: {request.user.id})")
+    print(f"DEBUG get_active_tickets: Current time: {now}")
+    
+    # Query dengan prefetch untuk seats
     active_purchases = Pembelian.objects.filter(
         user=request.user,
         status='CONFIRMED',
@@ -169,8 +178,16 @@ def get_active_tickets(request):
     ).select_related(
         'match', 
         'match__team_a', 
-        'match__team_b'
+        'match__team_b',
+        'match__venue'
+    ).prefetch_related(
+        'seats',
+        'seats__category'
     ).order_by('match__start_time')
+    
+    print(f"DEBUG get_active_tickets: Found {active_purchases.count()} active purchases")
+    for purchase in active_purchases:
+        print(f"DEBUG: Purchase {purchase.order_id} - User: {purchase.user}, Status: {purchase.status}, Match: {purchase.match.title if purchase.match else 'None'}")
     
     context = {
         'active_purchases': active_purchases
