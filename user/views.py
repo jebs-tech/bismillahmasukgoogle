@@ -172,10 +172,12 @@ def get_active_tickets(request):
     
     # Query dengan prefetch untuk seats
     # Filter: user harus sesuai, status CONFIRMED, dan match belum terjadi
+    # Juga filter untuk memastikan seats ada
     active_purchases = Pembelian.objects.filter(
         user=request.user,
         status='CONFIRMED',
-        match__start_time__gt=now # gt = greater than (di masa depan)
+        match__start_time__gt=now, # gt = greater than (di masa depan)
+        seats__isnull=False  # Pastikan ada seats
     ).select_related(
         'match', 
         'match__team_a', 
@@ -184,7 +186,7 @@ def get_active_tickets(request):
     ).prefetch_related(
         'seats',
         'seats__category'
-    ).order_by('-tanggal_pembelian', 'match__start_time')  # Urutkan berdasarkan tanggal pembelian terbaru dulu
+    ).distinct().order_by('-tanggal_pembelian', 'match__start_time')  # Urutkan berdasarkan tanggal pembelian terbaru dulu
     
     purchase_count = active_purchases.count()
     print(f"DEBUG get_active_tickets: Found {purchase_count} active purchases")
@@ -297,12 +299,16 @@ def purchase_detail(request, event_id): # event_id adalah match_id
     return render(request, 'profile/_purchase_detail.html', context)
 
 
-login_required(login_url='/login')
+@login_required(login_url='/login')
 def ticket_detail(request, ticket_id): # ticket_id adalah seat_id
     """
     Menampilkan modal detail untuk satu tiket/kursi, 
     TERMASUK mengambil data Pembelian terkait untuk QR Code.
     """
+    from matches.models import Seat
+    from payment.models import Pembelian
+    
+    # Cari seat yang dimiliki user dengan pembelian CONFIRMED
     seat = get_object_or_404(
         Seat.objects.select_related('match', 'category', 'match__venue', 'match__team_a', 'match__team_b'), 
         id=ticket_id, 
@@ -316,11 +322,15 @@ def ticket_detail(request, ticket_id): # ticket_id adalah seat_id
         pembelian_terkait = Pembelian.objects.get(seats=seat, user=request.user, status='CONFIRMED')
     except Pembelian.DoesNotExist:
         pembelian_terkait = None # Handle jika pembelian tidak ditemukan
+        print(f"WARNING: Pembelian tidak ditemukan untuk seat {seat.id} dan user {request.user.username}")
     except Pembelian.MultipleObjectsReturned:
         # Kasus aneh jika satu kursi terhubung ke >1 pembelian confirmed user ini
         pembelian_terkait = Pembelian.objects.filter(seats=seat, user=request.user, status='CONFIRMED').first()
         print(f"Peringatan: Kursi {seat.id} terhubung ke beberapa pembelian!")
     # -------------------------------
+    
+    # Debug: Cek apakah QR code ada
+    print(f"DEBUG ticket_detail: Seat ID: {seat.id}, QR Code exists: {bool(seat.file_qr_code)}, QR Code URL: {seat.file_qr_code.url if seat.file_qr_code else 'None'}")
     
     context = {
         'ticket': seat, # 'ticket' adalah objek Seat

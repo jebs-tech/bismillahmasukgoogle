@@ -438,7 +438,18 @@ def proses_bayar_ajax(request, order_id):
             qr_file = generate_qr_code(qr_data)
             filename = f"{pembelian.order_id}_seat_{seat.id}.png"
 
-            seat.file_qr_code.save(filename, qr_file, save=True)
+            # Simpan QR code ke seat
+            try:
+                seat.file_qr_code.save(filename, qr_file, save=True)
+                # Refresh dari database untuk memastikan file tersimpan
+                seat.refresh_from_db()
+                print(f"DEBUG: QR code saved for seat {seat.id}: {seat.file_qr_code.url if seat.file_qr_code else 'FAILED'}")
+                if not seat.file_qr_code:
+                    print(f"ERROR: QR code file not saved for seat {seat.id}")
+            except Exception as e:
+                print(f"ERROR saving QR code for seat {seat.id}: {str(e)}")
+                import traceback
+                print(traceback.format_exc())
 
             etickets.append({
                 "seat_id": seat.id,
