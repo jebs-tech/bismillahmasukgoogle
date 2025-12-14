@@ -354,9 +354,11 @@ def generate_qr_code(qr_data):
     # Simpan gambar ke buffer memori
     buffer = BytesIO()
     img.save(buffer, format='PNG')
+    buffer.seek(0)  # Reset buffer ke awal
 
     # Bungkus dalam ContentFile agar bisa disimpan oleh Django ImageField
-    filename = f'qr_{qr_data}.png'
+    # Gunakan nama file yang lebih sederhana untuk menghindari karakter khusus
+    filename = f'qr_{qr_data.replace("|", "_")}.png'
     return ContentFile(buffer.getvalue(), name=filename)
 
 # --- VIEW UTAMA AJAX UNTUK PEMBAYARAN ---
@@ -443,8 +445,19 @@ def proses_bayar_ajax(request, order_id):
                 seat.file_qr_code.save(filename, qr_file, save=True)
                 # Refresh dari database untuk memastikan file tersimpan
                 seat.refresh_from_db()
-                print(f"DEBUG: QR code saved for seat {seat.id}: {seat.file_qr_code.url if seat.file_qr_code else 'FAILED'}")
-                if not seat.file_qr_code:
+                
+                # Verifikasi file benar-benar tersimpan
+                if seat.file_qr_code and seat.file_qr_code.name:
+                    print(f"DEBUG: QR code saved for seat {seat.id}: {seat.file_qr_code.name}, URL: {seat.file_qr_code.url}")
+                    # Cek apakah file benar-benar ada di filesystem
+                    import os
+                    from django.conf import settings
+                    file_path = os.path.join(settings.MEDIA_ROOT, seat.file_qr_code.name)
+                    if os.path.exists(file_path):
+                        print(f"DEBUG: QR code file exists at: {file_path}")
+                    else:
+                        print(f"WARNING: QR code file not found at: {file_path}")
+                else:
                     print(f"ERROR: QR code file not saved for seat {seat.id}")
             except Exception as e:
                 print(f"ERROR saving QR code for seat {seat.id}: {str(e)}")

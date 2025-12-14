@@ -171,12 +171,15 @@ def get_active_tickets(request):
     print(f"DEBUG get_active_tickets: Current time: {now}")
     
     # Query dengan prefetch untuk seats
-    # Filter: user harus sesuai, status CONFIRMED, dan match belum terjadi
-    # Juga filter untuk memastikan seats ada
+    # Filter: user harus sesuai, status CONFIRMED
+    # Tampilkan tiket yang match time di masa depan ATAU tiket yang baru dibeli (dalam 30 hari terakhir)
+    from datetime import timedelta
+    thirty_days_ago = now - timedelta(days=30)
+    
     active_purchases = Pembelian.objects.filter(
+        Q(match__start_time__gt=now) | Q(tanggal_pembelian__gte=thirty_days_ago),
         user=request.user,
         status='CONFIRMED',
-        match__start_time__gt=now, # gt = greater than (di masa depan)
         seats__isnull=False  # Pastikan ada seats
     ).select_related(
         'match', 
