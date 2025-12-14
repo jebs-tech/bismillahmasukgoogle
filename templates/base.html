@@ -54,7 +54,7 @@
 </head>
 <body class="bg-gradient-to-t from-[#FADF95] to-[#FFFFFF] min-h-screen flex flex-col">
     
-    <nav class="bg-[#1e2c4f] shadow-lg fixed w-full z-50 top-0">
+    <nav class="bg-[#1e2c4f] shadow-lg fixed w-full top-0" style="z-index: 100;">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-20">
                 <div class="flex items-center">
@@ -89,22 +89,25 @@
                         </div>
                     </div>
 
-                    <div class="relative">
+                    <div class="relative" style="z-index: 60;">
                         <button id="notifButton" 
-                                class="relative flex items-center justify-center w-11 h-11 rounded-full bg-[#fdf4d9]/10 hover:bg-[#fdf4d9]/20 transition duration-200 shadow-sm"
+                                type="button"
+                                class="relative flex items-center justify-center w-11 h-11 rounded-full bg-[#fdf4d9]/10 hover:bg-[#fdf4d9]/20 transition duration-200 shadow-sm cursor-pointer"
+                                style="pointer-events: auto; z-index: 61;"
                                 aria-label="Notifikasi">
-                            <svg class="w-6 h-6 text-[#fdf4d9]" fill="currentColor" viewBox="0 0 20 20">
+                            <svg class="w-6 h-6 text-[#fdf4d9] pointer-events-none" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M10 2a6 6 0 00-6 6v2.586l-.707.707A1 1 0 004 13h12a1 1 0 00.707-1.707L16 10.586V8a6 6 0 00-6-6z"></path>
                             </svg>
                             <span id="notif-badge" 
-                                    class="absolute -top-1 -right-1 bg-[#f6ca50] text-[#1e2c4f] text-xs font-semibold rounded-full px-1.5 py-0.5 hidden shadow-md">
+                                    class="absolute -top-1 -right-1 bg-[#f6ca50] text-[#1e2c4f] text-xs font-semibold rounded-full px-1.5 py-0.5 hidden shadow-md pointer-events-none">
                                     0
                             </span>
                         </button>
 
                         <!-- Dropdown -->
                         <div id="notifDropdown" 
-                            class="hidden absolute right-0 mt-3 w-80 bg-[#fdf4d9] rounded-xl shadow-xl border border-[#f6ca50]/50 overflow-hidden z-50 animate-fadeIn">
+                            class="hidden absolute right-0 mt-3 w-80 bg-[#fdf4d9] rounded-xl shadow-xl border border-[#f6ca50]/50 overflow-hidden animate-fadeIn"
+                            style="z-index: 62;">
                             <div class="p-3 border-b border-[#f6ca50]/40 flex justify-between items-center bg-[#f6ca50]/10">
                                 <span class="text-[#1e2c4f] font-semibold text-sm">Notifikasi</span>
                                 <button id="markAllReadBtn" class="text-xs text-[#1e2c4f]/70 hover:text-[#1e2c4f] transition">Tandai semua baca</button>
@@ -421,16 +424,42 @@ document.addEventListener('keydown', function(e) {
         const toastContainer = document.getElementById('toast-container');
 
         // === Toggle dropdown ===
-        notifButton?.addEventListener('click', function(e) {
-            e.stopPropagation();
-            dropdown.classList.toggle('hidden');
-            if (!dropdown.classList.contains('hidden')) fetchUnreadAndRender();
-        });
-        document.addEventListener('click', e => {
-            if (!e.target.closest('#notifDropdown') && !e.target.closest('#notifButton')) {
-            dropdown.classList.add('hidden');
+        // Use capture phase and stopPropagation to ensure this runs first
+        if (notifButton) {
+            notifButton.addEventListener('click', function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                e.stopImmediatePropagation(); // Prevent other listeners from running
+                const isHidden = dropdown.classList.contains('hidden');
+                dropdown.classList.toggle('hidden');
+                if (!isHidden) {
+                    // Dropdown was open, now closing
+                } else {
+                    // Dropdown was closed, now opening
+                    fetchUnreadAndRender();
+                }
+                return false; // Additional safety
+            }, true); // Use capture phase to run before other listeners
+            
+            // Also handle mousedown as backup
+            notifButton.addEventListener('mousedown', function(e) {
+                e.stopPropagation();
+            }, true);
+        }
+        
+        // Close dropdown when clicking outside (use bubble phase, runs after button click)
+        // Use setTimeout to ensure this runs after the button click handler
+        document.addEventListener('click', function(e) {
+            // Only close if clicking outside both button and dropdown
+            const clickedButton = e.target.closest('#notifButton');
+            const clickedDropdown = e.target.closest('#notifDropdown');
+            if (!clickedButton && !clickedDropdown) {
+                // Use setTimeout to avoid race condition with button click
+                setTimeout(function() {
+                    dropdown.classList.add('hidden');
+                }, 0);
             }
-        });
+        }, false); // Use bubble phase
 
         // === Mark all read ===
         markAllReadBtn?.addEventListener('click', function(e) {

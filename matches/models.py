@@ -36,7 +36,7 @@ class Match(models.Model):
 
     description = models.TextField(blank=True)
 
-    price_from = models.PositiveIntegerField(default=75000, editable=False)
+    price_from = models.PositiveIntegerField(default=75000, editable=True)
 
     def __str__(self):
         if self.title:
