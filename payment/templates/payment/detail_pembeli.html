@@ -168,6 +168,19 @@
             }).format(number);
         }
 
+        // Fungsi untuk update tombol konfirmasi berdasarkan kategori
+        function updateButtonState() {
+            if (selectKategori && selectKategori.value && HARGA_SATUAN > 0) {
+                if (btnKonfirmasi) {
+                    btnKonfirmasi.disabled = false;
+                }
+            } else {
+                if (btnKonfirmasi) {
+                    btnKonfirmasi.disabled = true;
+                }
+            }
+        }
+
         // Event Listener untuk mengupdate harga saat kategori dipilih
         if (selectKategori) {
             selectKategori.addEventListener('change', function() {
@@ -179,13 +192,23 @@
                 displayHargaSatuan.textContent = "Harga Satuan: " + formatRupiah(HARGA_SATUAN);
                 displayHargaSatuan.classList.remove('hidden');
 
-                // Aktifkan tombol konfirmasi jika harga valid
-                if (HARGA_SATUAN > 0 && btnKonfirmasi) {
-                    btnKonfirmasi.disabled = false;
-                } else if (btnKonfirmasi) {
-                    btnKonfirmasi.disabled = true;
-                }
+                // Update state tombol
+                updateButtonState();
             });
+            
+            // Cek jika kategori sudah terpilih saat halaman load
+            if (selectKategori.value) {
+                const selectedOption = selectKategori.options[selectKategori.selectedIndex];
+                HARGA_SATUAN = parseInt(selectedOption.getAttribute('data-price')) || 0;
+                KATEGORI_TERPILIH = selectedOption.getAttribute('data-name');
+                
+                if (HARGA_SATUAN > 0) {
+                    displayHargaSatuan.textContent = "Harga Satuan: " + formatRupiah(HARGA_SATUAN);
+                    displayHargaSatuan.classList.remove('hidden');
+                }
+                
+                updateButtonState();
+            }
         }
 
         // Fungsi untuk menambahkan form tiket (Sama seperti sebelumnya)
