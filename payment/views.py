@@ -67,11 +67,6 @@ def simpan_pembelian_ajax(request):
     Endpoint untuk menyimpan data pembelian.
     Menggunakan transaction.atomic untuk memastikan konsistensi data.
     """
-<<<<<<< HEAD
-
-=======
-    
->>>>>>> 2b799d2e0ae11c076f623322ac1cb1ec8a08522f
     try:
         # Log request info untuk debugging - GUNAKAN print juga untuk memastikan muncul di log
         print("=" * 50)
@@ -81,20 +76,10 @@ def simpan_pembelian_ajax(request):
         print(f"Content-Type: {request.META.get('CONTENT_TYPE')}")
         print(f"CSRF Token in header: {request.META.get('HTTP_X_CSRFTOKEN', 'NOT FOUND')}")
         print("=" * 50)
-<<<<<<< HEAD
-
-=======
-        
->>>>>>> 2b799d2e0ae11c076f623322ac1cb1ec8a08522f
         logger.info(f"Request received from: {request.META.get('REMOTE_ADDR')}")
         logger.info(f"User: {request.user if request.user.is_authenticated else 'Anonymous'}")
         logger.info(f"Request method: {request.method}")
         logger.info(f"Content-Type: {request.META.get('CONTENT_TYPE')}")
-<<<<<<< HEAD
-
-=======
-        
->>>>>>> 2b799d2e0ae11c076f623322ac1cb1ec8a08522f
         # Parse JSON body
         try:
             body_str = request.body.decode('utf-8')
@@ -148,33 +133,18 @@ def simpan_pembelian_ajax(request):
                 "status": "error",
                 "message": "Nama lengkap, email, dan nomor telepon wajib diisi"
             }, status=400)
-<<<<<<< HEAD
-
-=======
-        
->>>>>>> 2b799d2e0ae11c076f623322ac1cb1ec8a08522f
         # Validasi format email sederhana
         if '@' not in email or '.' not in email.split('@')[-1]:
             return JsonResponse({
                 "status": "error",
                 "message": "Format email tidak valid"
             }, status=400)
-<<<<<<< HEAD
-
-=======
-        
->>>>>>> 2b799d2e0ae11c076f623322ac1cb1ec8a08522f
         # Validasi panjang field
         if len(nama_lengkap) > 100:
             return JsonResponse({
                 "status": "error",
                 "message": "Nama lengkap terlalu panjang (maksimal 100 karakter)"
             }, status=400)
-<<<<<<< HEAD
-
-=======
-        
->>>>>>> 2b799d2e0ae11c076f623322ac1cb1ec8a08522f
         if len(nomor_telepon) > 20:
             return JsonResponse({
                 "status": "error",
@@ -193,11 +163,6 @@ def simpan_pembelian_ajax(request):
             match=match,
             category=kategori
         ).count()
-<<<<<<< HEAD
-
-=======
-        
->>>>>>> 2b799d2e0ae11c076f623322ac1cb1ec8a08522f
         if total_seats == 0:
             return JsonResponse({
                 "status": "error",
@@ -231,11 +196,6 @@ def simpan_pembelian_ajax(request):
                 "status": "error",
                 "message": f"Tidak cukup kursi tersedia saat ini. Silakan coba lagi."
             }, status=400)
-<<<<<<< HEAD
-
-=======
-        
->>>>>>> 2b799d2e0ae11c076f623322ac1cb1ec8a08522f
         print(f"DEBUG: Found {len(available_seats)} available seats")
 
         # Simpan seat IDs untuk rollback jika diperlukan
@@ -274,11 +234,6 @@ def simpan_pembelian_ajax(request):
                 "status": "error",
                 "message": f"Gagal menghubungkan seat: {str(e)}"
             }, status=500)
-<<<<<<< HEAD
-
-=======
-        
->>>>>>> 2b799d2e0ae11c076f623322ac1cb1ec8a08522f
         # Update is_booked untuk setiap seat SETELAH semuanya berhasil
         try:
             Seat.objects.filter(id__in=seat_ids).update(is_booked=True)
@@ -298,29 +253,6 @@ def simpan_pembelian_ajax(request):
             "status": "success",
             "order_id": pembelian.order_id
         })
-<<<<<<< HEAD
-
-    except (ValueError, TypeError) as e:
-        print(f"ERROR ValueError/TypeError: {e}")
-        print(traceback.format_exc())
-        return JsonResponse({
-            "status": "error",
-            "message": f"Format data tidak valid: {str(e)}"
-        }, status=400)
-
-    except Match.DoesNotExist as e:
-        error_msg = f"Match tidak ditemukan: {e}"
-        print(f"ERROR: {error_msg}")
-        logger.error(error_msg)
-        return JsonResponse({"status": "error", "message": "Match tidak ditemukan"}, status=404)
-
-    except SeatCategory.DoesNotExist as e:
-        error_msg = f"Kategori tidak ditemukan: {e}"
-        print(f"ERROR: {error_msg}")
-        logger.error(error_msg)
-        return JsonResponse({"status": "error", "message": "Kategori tidak ditemukan"}, status=404)
-
-=======
 
     except (ValueError, TypeError) as e:
         print(f"ERROR ValueError/TypeError: {e}")
@@ -342,16 +274,10 @@ def simpan_pembelian_ajax(request):
         logger.error(error_msg)
         return JsonResponse({"status": "error", "message": "Kategori tidak ditemukan"}, status=404)
     
->>>>>>> 2b799d2e0ae11c076f623322ac1cb1ec8a08522f
     except Exception as e:
         error_type = type(e).__name__
         error_message = str(e)
         error_traceback = traceback.format_exc()
-<<<<<<< HEAD
-
-=======
-        
->>>>>>> 2b799d2e0ae11c076f623322ac1cb1ec8a08522f
         # Print ke console (akan muncul di log PWS)
         print("=" * 50)
         print(f"CRITICAL ERROR in simpan_pembelian_ajax")
@@ -360,19 +286,9 @@ def simpan_pembelian_ajax(request):
         print("Full Traceback:")
         print(error_traceback)
         print("=" * 50)
-<<<<<<< HEAD
-
         # Log juga menggunakan logger
         logger.error(f"ERROR simpan_pembelian_ajax [{error_type}]: {error_message}")
         logger.error(error_traceback)
-
-=======
-        
-        # Log juga menggunakan logger
-        logger.error(f"ERROR simpan_pembelian_ajax [{error_type}]: {error_message}")
-        logger.error(error_traceback)
-        
->>>>>>> 2b799d2e0ae11c076f623322ac1cb1ec8a08522f
         # Berikan pesan error yang lebih informatif berdasarkan tipe error
         if "database" in error_message.lower() or "connection" in error_message.lower():
             user_message = "Terjadi masalah dengan database. Silakan coba lagi dalam beberapa saat."
@@ -384,20 +300,11 @@ def simpan_pembelian_ajax(request):
             user_message = "Data yang diminta tidak ditemukan di database."
         else:
             user_message = f"Terjadi kesalahan: {error_message}"
-<<<<<<< HEAD
-
-=======
-        
->>>>>>> 2b799d2e0ae11c076f623322ac1cb1ec8a08522f
         return JsonResponse({
             "status": "error",
             "message": user_message,
             "error_type": error_type if settings.DEBUG else None  # Hanya tampilkan di development
         }, status=500)
-<<<<<<< HEAD
-
-=======
->>>>>>> 2b799d2e0ae11c076f623322ac1cb1ec8a08522f
 
         
 def detail_pembayaran_view(request, order_id):
@@ -470,19 +377,9 @@ def proses_bayar_ajax(request, order_id):
         if bukti_transfer:
             pembelian.bukti_transfer = bukti_transfer
         pembelian.status = 'CONFIRMED'
-<<<<<<< HEAD
-
         # Assign user jika user sudah login (untuk memastikan tiket muncul di dashboard)
         if request.user.is_authenticated and not pembelian.user:
             pembelian.user = request.user
-
-=======
-        
-        # Assign user jika user sudah login (untuk memastikan tiket muncul di dashboard)
-        if request.user.is_authenticated and not pembelian.user:
-            pembelian.user = request.user
-        
->>>>>>> 2b799d2e0ae11c076f623322ac1cb1ec8a08522f
         pembelian.save()
 
         # =====================
