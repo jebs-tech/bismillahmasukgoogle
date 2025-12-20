@@ -1,33 +1,67 @@
 {% load static %}
 <!-- partials/thread_card.html -->
-<div class="box thread-card" id="thread-{{ thread.id }}" data-thread-id="{{ thread.id }}">
-  <div class="thread-body">
-    <!-- Judul -->
-    <h3 class="thread-title mb-2">
-      <a href="{% url 'forums:thread_detail' thread.id %}" class="hover:text-brand-orange transition-colors duration-200">
-        {{ thread.title }}
-      </a>
-    </h3>
+<div class="box thread-card-wrapper" id="thread-{{ thread.id }}" data-thread-id="{{ thread.id }}">
+  <div class="thread-card bg-[#fdf4d9] rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-brand-gold overflow-hidden">
+    <div class="p-6">
+      <!-- Header: Title & Score -->
+      <div class="flex items-start justify-between mb-4">
+        <div class="flex-1">
+          <h3 class="thread-title mb-2">
+            <a href="{% url 'forums:thread_detail' thread.id %}" class="text-brand-dark-blue hover:text-brand-orange transition-colors duration-200 font-bold text-xl">
+              {{ thread.title }}
+            </a>
+          </h3>
+          
+          <!-- Tags -->
+          {% if thread.tags.all %}
+          <div class="flex flex-wrap gap-2 mt-2 mb-3">
+            {% for tag in thread.tags.all %}
+            <span class="bg-brand-gold/20 text-brand-dark-blue px-3 py-1 rounded-full text-xs font-semibold">
+              {{ tag.name }}
+            </span>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
 
-    <!-- Isi Thread -->
-    <p class="thread-content mb-3">{{ thread.content }}</p>
+        <!-- Vote Section -->
+        <div class="vote-buttons flex flex-col items-center gap-1 ml-4">
+          <button class="btn-upvote-thread" data-action="upvote" title="Upvote">
+            <i class='fas fa-arrow-circle-up text-xl hover:text-green-500 transition-colors' style='color:rgb(197, 185, 131)'></i>
+          </button>
+          <span id="thread-{{ thread.id }}-score" class="font-bold text-brand-dark-blue text-lg">{{ thread.score }}</span>
+          <button class="btn-downvote-thread" data-action="downvote" title="Downvote">
+            <i class='fas fa-arrow-circle-down text-xl hover:text-red-500 transition-colors' style='color:rgb(197, 185, 131)'></i>
+          </button>
+        </div>
+      </div>
 
-    <!-- Vote Buttons -->
-    <div class="vote-buttons flex items-center gap-2 mt-2">
-      <button class="btn-upvote-thread" data-action="upvote" title="Upvote"><i class='fas fa-arrow-circle-up' style='color:rgb(197, 185, 131)'></i></button>
-      <span id="thread-{{ thread.id }}-score">{{ thread.score }}</span>
-      <button class="btn-downvote-thread" data-action="downvote" title="Downvote"><i class='fas fa-arrow-circle-down' style='color:rgb(197, 185, 131)'></i></button>
+      <!-- Content Preview -->
+      <p class="thread-content text-gray-700 mb-4 line-clamp-3">
+        {{ thread.content|truncatewords:50 }}
+      </p>
+
+      <!-- Footer: Meta Info -->
+      <div class="flex items-center gap-4 pt-4 border-t border-brand-gold/30 text-sm text-gray-600">
+        <span class="flex items-center gap-1">
+          <i class="fas fa-user-circle text-brand-dark-blue"></i>
+          <span>
+            {% if thread.author %}
+              {{ thread.author.username }}
+            {% else %}
+              Anonim
+            {% endif %}
+          </span>
+        </span>
+        <span class="flex items-center gap-1">
+          <i class="far fa-clock text-brand-dark-blue"></i>
+          <span>{{ thread.created_at|date:"d M Y H:i" }}</span>
+        </span>
+        <span class="flex items-center gap-1">
+          <i class="far fa-comments text-brand-dark-blue"></i>
+          <span>{{ thread.replies.count }} balasan</span>
+        </span>
+      </div>
     </div>
-
-    <!-- Info Penulis -->
-    <p class="meta-info mt-3 text-sm text-gray-600">
-      Oleh 
-      {% if thread.author %}
-        {{ thread.author.username }}
-      {% else %}
-        Anonim
-      {% endif %}
-      • {{ thread.created_at|date:"d M Y H:i" }}
-    </p>
   </div>
 </div>

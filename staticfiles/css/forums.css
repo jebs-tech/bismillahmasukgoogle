@@ -3,27 +3,41 @@
 ========================================== */
 
 body {
-  font-family: 'Poppins', sans-serif;
+  font-family: 'DM Sans', 'Poppins', sans-serif;
 }
 
 /* ========== THREAD CARD CONTAINER ========== */
+.thread-card-wrapper {
+  width: 100%;
+}
+
+.thread-card {
+  background-color: #fdf4d9;             /* Warna krem lembut */
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  border-left: 4px solid #FFC107;       /* Brand gold highlight */
+}
+
+.thread-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Legacy support for .box and .thread-body classes */
 .box {
-  display: flex;
-  justify-content: center;
-  align-items: center;
   width: 100%;
   margin-bottom: 1.5rem;
 }
 
 .thread-body {
-  background-color: #fdf4d9;             /* Warna krem lembut */
+  background-color: #fdf4d9;
   box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.15);
   border-radius: 16px;
   padding: 1.5rem 2rem;
   width: 100%;
   max-width: 900px;
   transition: all 0.3s ease;
-  border-left: 6px solid #FFC107;       /* Brand gold highlight */
+  border-left: 6px solid #FFC107;
 }
 
 .thread-body:hover {
@@ -50,7 +64,15 @@ body {
 .thread-content {
   font-size: 1rem;
   color: #2d2d2d;
-  line-height: 1.5;
+  line-height: 1.6;
+}
+
+/* Line clamp utility for content preview */
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 /* ========== META INFO ========== */
@@ -130,17 +152,20 @@ body {
 
 .btn-edit-thread, .btn-delete-thread {
   border: none;
-  background-color: #e4c480;
-  color: white;
-  border-radius: 5px;
-  padding: 4px 10px;
-  margin-right: 5px;
+  border-radius: 8px;
+  padding: 6px 12px;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
 }
 
 .btn-edit-thread:hover, .btn-delete-thread:hover {
-  background-color: #7a5c1c;
+  transform: translateY(-1px);
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* ==========================================
