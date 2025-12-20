@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('matches', '0003_alter_team_options_remove_team_color_and_more'),
+        ('matches', '0001_initial'),
     ]
 
     operations = [
