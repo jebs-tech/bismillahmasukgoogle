@@ -77,56 +77,33 @@ const csrftoken = getCookie('csrftoken');
 
 $(document).ready(function() {
   
-  // === ENSURE NOTIFICATION BUTTON WORKS FIRST ===
-  // Pastikan handler notifikasi terdaftar lebih dulu untuk menghindari konflik
-  // Re-register handler untuk memastikan kompatibilitas dengan jQuery
-  $('#notifButton').off('click.jqnotif').on('click.jqnotif', function(e) {
-    e.stopPropagation();
-    e.stopImmediatePropagation();
-    const dropdown = document.getElementById('notifDropdown');
-    if (!dropdown) return false;
-    
-    const isHidden = dropdown.classList.contains('hidden');
-    dropdown.classList.toggle('hidden');
-    
-    if (!isHidden) {
-      // Dropdown was open, now closing
-    } else {
-      // Dropdown was closed, now opening - fetch notifications
-      // Cek jika function fetchUnreadAndRender tersedia (dari base.html)
-      if (typeof window.fetchUnreadAndRender === 'function') {
-        window.fetchUnreadAndRender();
-      } else if (typeof fetchUnreadAndRender === 'function') {
-        fetchUnreadAndRender();
-      } else {
-        // Fallback: langsung fetch
-        const badge = document.getElementById('notif-badge');
-        const dropdownContent = document.getElementById('notifDropdownContent');
-        if (dropdownContent) {
-          fetch("{% url 'notifications:notification_unread_count' %}")
-            .then(r => r.json())
-            .then(data => {
-              const count = data.unread_count || 0;
-              if (count > 0 && badge) {
-                badge.textContent = count;
-                badge.classList.remove('hidden');
-              } else if (badge) {
-                badge.classList.add('hidden');
-              }
-              if (!dropdown.classList.contains('hidden')) {
-                if (count > 0 && data.html) {
-                  dropdownContent.innerHTML = data.html;
-                } else {
-                  dropdownContent.innerHTML = '<div class="p-4 text-sm text-[#1e2c4f]/60 italic text-center">Tidak ada notifikasi baru.</div>';
-                }
-              }
-            })
-            .catch(() => {});
+  // === ENSURE NOTIFICATION BUTTON WORKS ===
+  // Pastikan handler notifikasi tetap berfungsi - gunakan namespace yang sama dengan base.html
+  // Delay sedikit untuk memastikan base.html handler sudah terdaftar dulu
+  setTimeout(function() {
+    if (typeof jQuery !== 'undefined' && jQuery('#notifButton').length > 0) {
+      // Re-register dengan namespace yang sama dengan base.html (.notif)
+      jQuery('#notifButton').off('click.notif.forum').on('click.notif.forum', function(e) {
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        const dropdown = document.getElementById('notifDropdown');
+        if (!dropdown) return false;
+        
+        const isHidden = dropdown.classList.contains('hidden');
+        dropdown.classList.toggle('hidden');
+        
+        if (!isHidden) {
+          // Dropdown was open, now closing
+        } else {
+          // Dropdown was closed, now opening - fetch notifications
+          if (typeof window.fetchUnreadAndRender === 'function') {
+            window.fetchUnreadAndRender();
+          }
         }
-      }
+        return false;
+      });
     }
-    return false;
-  });
+  }, 200); // Delay lebih lama untuk memastikan base.html sudah selesai
 
   // === CREATE THREAD ===
   $('#create-thread-form').on('submit', function(e) {
@@ -166,22 +143,32 @@ $(document).ready(function() {
 
   // === THREAD VOTING HANDLER ===
   // Hanya bind pada elemen dalam thread-list, bukan seluruh document untuk menghindari konflik dengan navbar
-  // Gunakan namespace untuk memudahkan debugging dan menghindari konflik
+  // Gunakan delegated event handler yang lebih spesifik
   $('#thread-list').off('click.vote').on('click.vote', '.btn-upvote-thread, .btn-downvote-thread', function(e) {
-    // Pastikan ini benar-benar tombol vote, bukan elemen lain
-    if (!$(this).hasClass('btn-upvote-thread') && !$(this).hasClass('btn-downvote-thread')) {
+    // PASTIKAN: Handler ini HANYA untuk elemen dalam #thread-list
+    // Jika klik berasal dari luar thread-list (misalnya navbar), abaikan sepenuhnya
+    const $clicked = $(e.target);
+    const $btn = $(this);
+    
+    // Cek apakah klik berasal dari navbar atau elemen notifikasi - jika ya, biarkan event berlanjut
+    if ($clicked.closest('nav').length > 0 || 
+        $clicked.closest('header').length > 0 ||
+        $clicked.closest('#notifButton').length > 0 || 
+        $clicked.closest('#notifDropdown').length > 0 ||
+        $btn.closest('nav').length > 0 ||
+        $btn.closest('header').length > 0) {
+      return true; // Biarkan event berlanjut untuk handler lain (termasuk notifikasi)
+    }
+    
+    // Pastikan ini benar-benar tombol vote atau icon di dalamnya
+    if (!$btn.hasClass('btn-upvote-thread') && 
+        !$btn.hasClass('btn-downvote-thread') &&
+        !$clicked.closest('.btn-upvote-thread').length &&
+        !$clicked.closest('.btn-downvote-thread').length) {
       return true; // Biarkan event berlanjut
     }
     
-    // Pastikan tidak tertangkap jika ada di navbar atau notifikasi
-    const $target = $(e.target);
-    if ($target.closest('nav').length > 0 || 
-        $target.closest('#notifButton').length > 0 || 
-        $target.closest('#notifDropdown').length > 0 ||
-        $(this).closest('nav').length > 0) {
-      return true; // Biarkan event berlanjut untuk handler lain
-    }
-    
+    // Hanya stop propagation jika benar-benar menangani vote
     e.preventDefault();
     e.stopPropagation();
     
@@ -206,9 +193,11 @@ $(document).ready(function() {
     }
 
     // Disable button sementara untuk mencegah double click
-    const $btn = $(this);
     const originalHtml = $btn.html();
     $btn.prop('disabled', true);
+    
+    // Simpan reference ke button untuk digunakan di complete handler
+    const $buttonToReenable = $btn;
 
     // Build URL - Django URL pattern: ajax/<int:thread_id>/vote/
     // Gunakan base URL dari Django dan replace placeholder dengan threadId
@@ -241,7 +230,8 @@ $(document).ready(function() {
         alert(errorMsg);
       },
       complete: function() {
-        $btn.prop('disabled', false);
+        // Re-enable button setelah selesai
+        $buttonToReenable.prop('disabled', false);
       }
     });
   });
