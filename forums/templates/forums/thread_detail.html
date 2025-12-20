@@ -184,8 +184,21 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(res => res.json())
         .then(data => {
           if (data.success) {
-            // gunakan HTML yang dikirim server (reply_card) sehingga tombol & vote ada
-            document.getElementById('replies-container').insertAdjacentHTML('beforeend', data.html);
+            // Hapus pesan "Belum ada balasan" jika ada
+            const repliesContainer = document.getElementById('replies-container');
+            if (repliesContainer) {
+              // Cari semua elemen p di dalam container
+              const paragraphs = repliesContainer.querySelectorAll('p');
+              paragraphs.forEach(p => {
+                // Hapus jika mengandung teks "Belum ada balasan"
+                if (p.textContent.includes('Belum ada balasan')) {
+                  p.remove();
+                }
+              });
+              
+              // gunakan HTML yang dikirim server (reply_card) sehingga tombol & vote ada
+              repliesContainer.insertAdjacentHTML('beforeend', data.html);
+            }
             this.value = '';
             // highlight singkat
             const newReply = document.getElementById(`reply-${data.reply_id}`);

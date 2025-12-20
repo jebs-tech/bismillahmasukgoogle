@@ -30,7 +30,7 @@ SECRET_KEY = 'django-insecure-oh#rp6#8i7we#d@4^m1lpj8$nu7-&d81ududa@*vvyb1^2re2p
 PRODUCTION = os.getenv('PRODUCTION', 'False').lower() == 'true'
 DEBUG = True
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "jenisa-bunga-servetix.pbp.cs.ui.ac.id"]
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "jenisa-bunga-servetix.pbp.cs.ui.ac.id","10.0.0.2"]
 
 CSRF_TRUSTED_ORIGINS = [
     "https://jenisa-bunga-servetix.pbp.cs.ui.ac.id",
@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
+    'corsheaders',
     'payment',
     'voucher',
     'homepage',
@@ -66,7 +67,21 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
+
+CORS_ALLOWED_ORIGINS = [
+       "http://localhost",
+       "http://127.0.0.1",
+       "http://localhost:8000",
+   ]
+
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SAMESITE = 'None'
+SESSION_COOKIE_SAMESITE = 'None'
 
 ROOT_URLCONF = 'ServeTix.urls'
 

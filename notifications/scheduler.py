@@ -8,7 +8,7 @@ from .models import Notification
 def check_upcoming_matches():
     """
     Mengecek pertandingan yang akan berlangsung 1 hari lagi
-    dan membuat notifikasi untuk semua user.
+    dan membuat notifikasi untuk semsua uer.
     """
     now = timezone.now()
     tomorrow_start = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0)
