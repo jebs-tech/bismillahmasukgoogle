@@ -9,3 +9,4 @@ django-widget-tweaks
 apscheduler
 django-qr-code
 Pillow
+django-cors-headers

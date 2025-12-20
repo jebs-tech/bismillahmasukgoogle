@@ -30,10 +30,12 @@ SECRET_KEY = 'django-insecure-oh#rp6#8i7we#d@4^m1lpj8$nu7-&d81ududa@*vvyb1^2re2p
 PRODUCTION = os.getenv('PRODUCTION', 'False').lower() == 'true'
 DEBUG = True
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "jenisa-bunga-servetix.pbp.cs.ui.ac.id"]
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "jenisa-bunga-servetix.pbp.cs.ui.ac.id","10.0.2.2"]
 
 CSRF_TRUSTED_ORIGINS = [
     "https://jenisa-bunga-servetix.pbp.cs.ui.ac.id",
+    "http://localhost:8000", 
+    "http://127.0.0.1:8000"
 ]
 
 # Application definition
@@ -56,9 +58,11 @@ INSTALLED_APPS = [
     'notifications',
     'apscheduler',
     'qr_code',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware', # <--- PINDAHKAN KE SINI (PALING ATAS)
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -162,6 +166,13 @@ else:
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
+
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+CSRF_COOKIE_SECURE = False
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SAMESITE = 'None'
+SESSION_COOKIE_SAMESITE = 'None'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
