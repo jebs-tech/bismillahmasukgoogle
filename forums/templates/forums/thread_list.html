@@ -76,75 +76,9 @@ function getCookie(name) {
 const csrftoken = getCookie('csrftoken');
 
 $(document).ready(function() {
-
-  // === CREATE THREAD ===
-  $('#create-thread-form').on('submit', function(e) {
-    e.preventDefault();
-    const formData = $(this).serialize();
-
-    $.ajax({
-      url: "{% url 'forums:create_thread_ajax' %}",
-      method: "POST",
-      headers: { 'X-CSRFToken': csrftoken },
-      data: formData,
-      success: function(response) {
-        if (response.success) {
-          // Tambahkan thread baru ke atas daftar
-          $('#thread-list').prepend(response.html);
-          $('#create-thread-form')[0].reset();
-
-          // Efek muncul lembut
-          $('#thread-list .box').first().hide().fadeIn(400);
-          
-          // Trigger update notifikasi (jika ada user lain yang akan dapat notifikasi)
-          setTimeout(function() {
-            if (typeof window.fetchUnreadAndRender === 'function') {
-              window.fetchUnreadAndRender();
-            }
-          }, 300);
-        } else {
-          alert("Terjadi kesalahan: " + JSON.stringify(response.errors));
-        }
-      },
-      error: function(xhr) {
-        console.log(xhr.responseText);
-        alert("Gagal membuat thread. Pastikan kamu sudah login.");
-      }
-    });
-  });
-
-  // === THREAD VOTING HANDLER ===
-  // Hanya bind pada elemen dalam thread-list, bukan seluruh document untuk menghindari konflik dengan navbar
-  $('#thread-list').on('click', '.btn-upvote-thread, .btn-downvote-thread', function(e) {
-    // Pastikan tidak tertangkap jika ada di navbar
-    if ($(this).closest('nav').length > 0 || $(this).closest('#notifButton').length > 0) {
-      return;
-    }
-    const threadCard = $(this).closest('.thread-card');
-    const threadId = threadCard.data('thread-id');
-    const action = $(this).data('action');
-
-    $.ajax({
-      url: `/forums/ajax/${threadId}/vote/`,
-      method: "POST",
-      headers: { 'X-CSRFToken': csrftoken },
-      data: { action: action },
-      success: function(response) {
-        if (response.success) {
-          $(`#thread-${threadId}-score`).text(response.score);
-        } else {
-          alert("Gagal memberikan suara: " + (response.message || ''));
-        }
-      },
-      error: function(xhr) {
-        console.log(xhr.responseText);
-        alert("Terjadi kesalahan jaringan.");
-      }
-    });
-  });
   
-  // === ENSURE NOTIFICATION BUTTON WORKS ===
-  // Pastikan handler notifikasi tetap berfungsi setelah jQuery dimuat
+  // === ENSURE NOTIFICATION BUTTON WORKS FIRST ===
+  // Pastikan handler notifikasi terdaftar lebih dulu untuk menghindari konflik
   // Re-register handler untuk memastikan kompatibilitas dengan jQuery
   $('#notifButton').off('click.jqnotif').on('click.jqnotif', function(e) {
     e.stopPropagation();
@@ -192,6 +126,124 @@ $(document).ready(function() {
       }
     }
     return false;
+  });
+
+  // === CREATE THREAD ===
+  $('#create-thread-form').on('submit', function(e) {
+    e.preventDefault();
+    const formData = $(this).serialize();
+
+    $.ajax({
+      url: "{% url 'forums:create_thread_ajax' %}",
+      method: "POST",
+      headers: { 'X-CSRFToken': csrftoken },
+      data: formData,
+      success: function(response) {
+        if (response.success) {
+          // Tambahkan thread baru ke atas daftar
+          $('#thread-list').prepend(response.html);
+          $('#create-thread-form')[0].reset();
+
+          // Efek muncul lembut
+          $('#thread-list .box').first().hide().fadeIn(400);
+          
+          // Trigger update notifikasi (jika ada user lain yang akan dapat notifikasi)
+          setTimeout(function() {
+            if (typeof window.fetchUnreadAndRender === 'function') {
+              window.fetchUnreadAndRender();
+            }
+          }, 300);
+        } else {
+          alert("Terjadi kesalahan: " + JSON.stringify(response.errors));
+        }
+      },
+      error: function(xhr) {
+        console.log(xhr.responseText);
+        alert("Gagal membuat thread. Pastikan kamu sudah login.");
+      }
+    });
+  });
+
+  // === THREAD VOTING HANDLER ===
+  // Hanya bind pada elemen dalam thread-list, bukan seluruh document untuk menghindari konflik dengan navbar
+  // Gunakan namespace untuk memudahkan debugging dan menghindari konflik
+  $('#thread-list').off('click.vote').on('click.vote', '.btn-upvote-thread, .btn-downvote-thread', function(e) {
+    // Pastikan ini benar-benar tombol vote, bukan elemen lain
+    if (!$(this).hasClass('btn-upvote-thread') && !$(this).hasClass('btn-downvote-thread')) {
+      return true; // Biarkan event berlanjut
+    }
+    
+    // Pastikan tidak tertangkap jika ada di navbar atau notifikasi
+    const $target = $(e.target);
+    if ($target.closest('nav').length > 0 || 
+        $target.closest('#notifButton').length > 0 || 
+        $target.closest('#notifDropdown').length > 0 ||
+        $(this).closest('nav').length > 0) {
+      return true; // Biarkan event berlanjut untuk handler lain
+    }
+    
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Cari thread-card-wrapper yang memiliki data-thread-id
+    const threadWrapper = $(this).closest('.thread-card-wrapper');
+    let threadId = threadWrapper.data('thread-id');
+    
+    // Fallback: coba ambil dari ID element
+    if (!threadId && threadWrapper.attr('id')) {
+      const idMatch = threadWrapper.attr('id').match(/thread-(\d+)/);
+      if (idMatch) {
+        threadId = idMatch[1];
+      }
+    }
+    
+    const action = $(this).data('action');
+    
+    if (!threadId) {
+      console.error('Thread ID tidak ditemukan', threadWrapper);
+      alert("Gagal mendapatkan ID thread.");
+      return;
+    }
+
+    // Disable button sementara untuk mencegah double click
+    const $btn = $(this);
+    const originalHtml = $btn.html();
+    $btn.prop('disabled', true);
+
+    // Build URL - Django URL pattern: ajax/<int:thread_id>/vote/
+    // Gunakan base URL dari Django dan replace placeholder dengan threadId
+    const baseUrl = "{% url 'forums:vote_thread_ajax' 0 %}";
+    // Replace semua kemunculan '/0/' dengan threadId
+    const voteUrl = baseUrl.replace(/\/0\//g, '/' + threadId + '/');
+    
+    $.ajax({
+      url: voteUrl,
+      method: "POST",
+      headers: { 'X-CSRFToken': csrftoken },
+      data: { action: action },
+      success: function(response) {
+        if (response.success) {
+          $(`#thread-${threadId}-score`).text(response.score);
+        } else {
+          alert("Gagal memberikan suara: " + (response.message || ''));
+        }
+      },
+      error: function(xhr) {
+        console.error('Vote error:', xhr);
+        let errorMsg = "Terjadi kesalahan jaringan.";
+        if (xhr.status === 403) {
+          errorMsg = "Anda harus login untuk memberikan suara.";
+        } else if (xhr.status === 404) {
+          errorMsg = "Thread tidak ditemukan.";
+        } else if (xhr.responseJSON && xhr.responseJSON.error) {
+          errorMsg = xhr.responseJSON.error;
+        }
+        alert(errorMsg);
+      },
+      complete: function() {
+        $btn.prop('disabled', false);
+      }
+    });
   });
   
   // === ENSURE MARK ALL READ BUTTON WORKS ===
