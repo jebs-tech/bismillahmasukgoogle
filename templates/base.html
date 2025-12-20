@@ -440,36 +440,52 @@ document.addEventListener('keydown', function(e) {
         const toastContainer = document.getElementById('toast-container');
 
         // === Toggle dropdown ===
-        // Use capture phase and stopPropagation to ensure this runs first
+        // Handler untuk tombol notifikasi - menggunakan multiple approach untuk kompatibilitas maksimal
+        function handleNotifButtonClick(e) {
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            const isHidden = dropdown.classList.contains('hidden');
+            dropdown.classList.toggle('hidden');
+            if (!isHidden) {
+                // Dropdown was open, now closing
+            } else {
+                // Dropdown was closed, now opening
+                fetchUnreadAndRender();
+            }
+            return false;
+        }
+        
         if (notifButton) {
-            notifButton.addEventListener('click', function(e) {
-                e.stopPropagation();
-                e.preventDefault();
-                e.stopImmediatePropagation(); // Prevent other listeners from running
-                const isHidden = dropdown.classList.contains('hidden');
-                dropdown.classList.toggle('hidden');
-                if (!isHidden) {
-                    // Dropdown was open, now closing
-                } else {
-                    // Dropdown was closed, now opening
-                    fetchUnreadAndRender();
-                }
-                return false; // Additional safety
-            }, true); // Use capture phase to run before other listeners
+            // Handler dengan capture phase (runs first)
+            notifButton.addEventListener('click', handleNotifButtonClick, true);
             
-            // Also handle mousedown as backup
+            // Handler dengan normal phase sebagai backup
+            notifButton.addEventListener('click', handleNotifButtonClick, false);
+            
+            // Mousedown handler untuk memastikan event tidak diteruskan
             notifButton.addEventListener('mousedown', function(e) {
                 e.stopPropagation();
             }, true);
         }
         
+        // Backup dengan jQuery untuk memastikan kompatibilitas dengan jQuery-based pages
+        // Delay sedikit untuk memastikan jQuery sudah dimuat jika ada
+        setTimeout(function() {
+            if (typeof jQuery !== 'undefined' && jQuery('#notifButton').length > 0) {
+                jQuery('#notifButton').off('click.notif').on('click.notif', function(e) {
+                    return handleNotifButtonClick(e);
+                });
+            }
+        }, 100);
+        
         // Close dropdown when clicking outside (use bubble phase, runs after button click)
         // Use setTimeout to ensure this runs after the button click handler
         document.addEventListener('click', function(e) {
-            // Only close if clicking outside both button and dropdown
+            // Only close if clicking outside both button, dropdown, and markAllReadBtn
             const clickedButton = e.target.closest('#notifButton');
             const clickedDropdown = e.target.closest('#notifDropdown');
-            if (!clickedButton && !clickedDropdown) {
+            const clickedMarkAllRead = e.target.closest('#markAllReadBtn');
+            if (!clickedButton && !clickedDropdown && !clickedMarkAllRead) {
                 // Use setTimeout to avoid race condition with button click
                 setTimeout(function() {
                     dropdown.classList.add('hidden');
@@ -478,45 +494,95 @@ document.addEventListener('keydown', function(e) {
         }, false); // Use bubble phase
 
         // === Mark all read ===
-        markAllReadBtn?.addEventListener('click', function(e) {
+        function handleMarkAllRead(e) {
             e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
             fetch("{% url 'notifications:notification_mark_all_read' %}", {
-            method: 'POST',
-            headers: { 'X-CSRFToken': csrftoken }
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrftoken }
             })
             .then(r => r.json())
             .then(data => {
-            if (data.success) {
-                badge.classList.add('hidden');
-                dropdownContent.innerHTML = '<div class="p-3 text-[#1e2c4f]/70 text-sm italic">Semua notifikasi sudah dibaca.</div>';
-            }
+                if (data.success) {
+                    badge.classList.add('hidden');
+                    // Tampilkan pesan yang konsisten dengan fetchUnreadAndRender
+                    dropdownContent.innerHTML = '<div class="p-4 text-sm text-[#1e2c4f]/60 italic text-center">Tidak ada notifikasi baru.</div>';
+                    // Update lastUnread untuk mencegah toast muncul
+                    if (typeof lastUnread !== 'undefined') {
+                        lastUnread = 0;
+                    }
+                }
+            })
+            .catch(err => {
+                console.error('Error marking all as read:', err);
             });
-        });
+            return false;
+        }
+        
+        if (markAllReadBtn) {
+            // Handler dengan vanilla JS
+            markAllReadBtn.addEventListener('click', handleMarkAllRead, true); // Capture phase
+            markAllReadBtn.addEventListener('click', handleMarkAllRead, false); // Bubble phase
+        }
+        
+        // Backup dengan jQuery untuk kompatibilitas dengan jQuery-based pages
+        setTimeout(function() {
+            if (typeof jQuery !== 'undefined' && jQuery('#markAllReadBtn').length > 0) {
+                jQuery('#markAllReadBtn').off('click.markread').on('click.markread', function(e) {
+                    return handleMarkAllRead(e);
+                });
+            }
+        }, 100);
 
         // === Poll unread count ===
         let lastUnread = null;
+        let isPolling = false; // Flag untuk mencegah multiple concurrent requests
+        
         function fetchUnreadAndRender() {
+            // Prevent concurrent requests
+            if (isPolling) return;
+            isPolling = true;
+            
             fetch("{% url 'notifications:notification_unread_count' %}")
             .then(r => r.json())
             .then(data => {
                 const count = data.unread_count || 0;
+                const prevCount = lastUnread;
+                
                 // badge update
                 if (count > 0) {
-                badge.textContent = count;
-                badge.classList.remove('hidden');
+                    badge.textContent = count;
+                    badge.classList.remove('hidden');
                 } else {
-                badge.classList.add('hidden');
+                    badge.classList.add('hidden');
                 }
-                // isi dropdown
-                if (!dropdown.classList.contains('hidden')) dropdownContent.innerHTML = data.html;
-                // toast muncul kalau ada notif baru
-                if (lastUnread !== null && count > lastUnread) {
-                showToast(`🔔 Kamu punya ${count - (lastUnread||0)} notifikasi baru`);
+                
+                // isi dropdown jika terbuka
+                if (!dropdown.classList.contains('hidden')) {
+                    if (count > 0 && data.html) {
+                        dropdownContent.innerHTML = data.html;
+                    } else {
+                        // Jika semua sudah dibaca, tampilkan pesan
+                        dropdownContent.innerHTML = '<div class="p-4 text-sm text-[#1e2c4f]/60 italic text-center">Tidak ada notifikasi baru.</div>';
+                    }
                 }
+                
+                // toast muncul kalau ada notif baru (hanya jika count bertambah)
+                if (prevCount !== null && count > prevCount) {
+                    showToast(`🔔 Kamu punya ${count - prevCount} notifikasi baru`);
+                }
+                
                 lastUnread = count;
+                isPolling = false;
             })
-            .catch(() => {});
+            .catch(() => {
+                isPolling = false;
+            });
         }
+        
+        // Expose function globally untuk akses dari jQuery handlers di halaman lain
+        window.fetchUnreadAndRender = fetchUnreadAndRender;
 
         // === Floating toast ===
         function showToast(message) {
@@ -528,9 +594,9 @@ document.addEventListener('keydown', function(e) {
             setTimeout(() => toast.remove(), 3500);
         }
 
-        // initial + interval
+        // initial + interval - Polling lebih agresif untuk real-time updates
         fetchUnreadAndRender();
-        setInterval(fetchUnreadAndRender, 30000);
+        setInterval(fetchUnreadAndRender, 2000); // Update setiap 2 detik untuk real-time experience
         });
         </script>
 

@@ -47,7 +47,11 @@
           <i class="fas fa-user-circle text-brand-dark-blue"></i>
           <span>
             {% if thread.author %}
-              {{ thread.author.username }}
+              {% if thread.author.profile.nama_lengkap %}
+                {{ thread.author.profile.nama_lengkap }}
+              {% else %}
+                {{ thread.author.username }}
+              {% endif %}
             {% else %}
               Anonim
             {% endif %}

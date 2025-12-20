@@ -1,33 +1,63 @@
 {% load static %}
 <!-- forums/threads/reply_card.html -->
-<div class="reply-box reply-item" id="reply-{{ reply.id }}" data-reply-id="{{ reply.id }}">
-  <!-- Isi Balasan -->
-  <p class="reply-content mb-1 text-gray-800">{{ reply.content }}</p>
+<div class="reply-item reply-card" id="reply-{{ reply.id }}" data-reply-id="{{ reply.id }}">
+  <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 border-l-4 border-brand-gold/50 overflow-hidden">
+    <div class="p-5">
+      <!-- Content -->
+      <div class="reply-content text-gray-800 mb-4 leading-relaxed whitespace-pre-wrap">{{ reply.content }}</div>
 
-  <!-- Info Penulis -->
-  <small class="block text-sm text-gray-600 mb-1">
-    {% if reply.author %}
-      Oleh {{ reply.author.username }}
-    {% else %}
-      Oleh Anonim
-    {% endif %}
-    • {{ reply.created_at|date:"d M Y H:i" }}
-  </small>
+      <!-- Footer: Meta & Actions -->
+      <div class="flex items-center justify-between pt-4 border-t border-gray-200">
+        <!-- Left: Meta Info -->
+        <div class="flex items-center gap-4 text-sm text-gray-600">
+          <span class="flex items-center gap-1.5">
+            <i class="fas fa-user-circle text-brand-dark-blue"></i>
+            <span class="font-medium">
+              {% if reply.author %}
+                {% if reply.author.profile.nama_lengkap %}
+                  {{ reply.author.profile.nama_lengkap }}
+                {% else %}
+                  {{ reply.author.username }}
+                {% endif %}
+              {% else %}
+                Anonim
+              {% endif %}
+            </span>
+          </span>
+          <span class="flex items-center gap-1.5">
+            <i class="far fa-clock text-brand-dark-blue"></i>
+            <span>{{ reply.created_at|date:"d M Y H:i" }}</span>
+          </span>
+        </div>
 
-  <!-- Voting Section -->
-  <div class="vote-buttons flex items-center gap-2 mt-1">
-    <button class="btn-upvote-reply" data-action="upvote" title="Upvote"><i class='fas fa-arrow-circle-up' style='color:rgb(197, 185, 131)'></i></button>
-    <span id="reply-{{ reply.id }}-score">{{ reply.score }}</span>
-    <button class="btn-downvote-reply" data-action="downvote" title="Downvote"><i class='fas fa-arrow-circle-down' style='color:rgb(197, 185, 131)'></i></button>
-  </div>
+        <!-- Right: Vote & Actions -->
+        <div class="flex items-center gap-4">
+          <!-- Voting Section -->
+          <div class="vote-buttons flex items-center gap-2">
+            <button class="btn-upvote-reply" data-action="upvote" title="Upvote">
+              <i class='fas fa-arrow-circle-up text-lg hover:text-green-500 transition-colors' style='color:rgb(197, 185, 131)'></i>
+            </button>
+            <span id="reply-{{ reply.id }}-score" class="font-semibold text-brand-dark-blue min-w-[24px] text-center">{{ reply.score }}</span>
+            <button class="btn-downvote-reply" data-action="downvote" title="Downvote">
+              <i class='fas fa-arrow-circle-down text-lg hover:text-red-500 transition-colors' style='color:rgb(197, 185, 131)'></i>
+            </button>
+          </div>
 
-  <!-- Edit/Delete Buttons -->
-  {% if user.is_authenticated %}
-    {% if user == reply.author or user.is_superuser %}
-      <div class="mt-2 flex gap-2">
-        <button class="btn-edit" data-reply-id="{{ reply.id }}">Edit</button>
-        <button class="btn-delete" data-reply-id="{{ reply.id }}">Delete</button>
+          <!-- Edit/Delete Buttons -->
+          {% if user.is_authenticated %}
+            {% if user == reply.author or user.is_superuser %}
+            <div class="flex gap-2">
+              <button class="btn-edit bg-brand-gold/80 hover:bg-brand-gold text-brand-dark-blue px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors" data-reply-id="{{ reply.id }}">
+                <i class="fas fa-edit"></i> Edit
+              </button>
+              <button class="btn-delete bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors" data-reply-id="{{ reply.id }}">
+                <i class="fas fa-trash"></i> Hapus
+              </button>
+            </div>
+            {% endif %}
+          {% endif %}
+        </div>
       </div>
-    {% endif %}
-  {% endif %}
+    </div>
+  </div>
 </div>

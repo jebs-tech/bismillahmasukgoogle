@@ -95,6 +95,13 @@ $(document).ready(function() {
 
           // Efek muncul lembut
           $('#thread-list .box').first().hide().fadeIn(400);
+          
+          // Trigger update notifikasi (jika ada user lain yang akan dapat notifikasi)
+          setTimeout(function() {
+            if (typeof window.fetchUnreadAndRender === 'function') {
+              window.fetchUnreadAndRender();
+            }
+          }, 300);
         } else {
           alert("Terjadi kesalahan: " + JSON.stringify(response.errors));
         }
@@ -107,7 +114,12 @@ $(document).ready(function() {
   });
 
   // === THREAD VOTING HANDLER ===
-  $(document).on('click', '.btn-upvote-thread, .btn-downvote-thread', function() {
+  // Hanya bind pada elemen dalam thread-list, bukan seluruh document untuk menghindari konflik dengan navbar
+  $('#thread-list').on('click', '.btn-upvote-thread, .btn-downvote-thread', function(e) {
+    // Pastikan tidak tertangkap jika ada di navbar
+    if ($(this).closest('nav').length > 0 || $(this).closest('#notifButton').length > 0) {
+      return;
+    }
     const threadCard = $(this).closest('.thread-card');
     const threadId = threadCard.data('thread-id');
     const action = $(this).data('action');
@@ -129,6 +141,104 @@ $(document).ready(function() {
         alert("Terjadi kesalahan jaringan.");
       }
     });
+  });
+  
+  // === ENSURE NOTIFICATION BUTTON WORKS ===
+  // Pastikan handler notifikasi tetap berfungsi setelah jQuery dimuat
+  // Re-register handler untuk memastikan kompatibilitas dengan jQuery
+  $('#notifButton').off('click.jqnotif').on('click.jqnotif', function(e) {
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    const dropdown = document.getElementById('notifDropdown');
+    if (!dropdown) return false;
+    
+    const isHidden = dropdown.classList.contains('hidden');
+    dropdown.classList.toggle('hidden');
+    
+    if (!isHidden) {
+      // Dropdown was open, now closing
+    } else {
+      // Dropdown was closed, now opening - fetch notifications
+      // Cek jika function fetchUnreadAndRender tersedia (dari base.html)
+      if (typeof window.fetchUnreadAndRender === 'function') {
+        window.fetchUnreadAndRender();
+      } else if (typeof fetchUnreadAndRender === 'function') {
+        fetchUnreadAndRender();
+      } else {
+        // Fallback: langsung fetch
+        const badge = document.getElementById('notif-badge');
+        const dropdownContent = document.getElementById('notifDropdownContent');
+        if (dropdownContent) {
+          fetch("{% url 'notifications:notification_unread_count' %}")
+            .then(r => r.json())
+            .then(data => {
+              const count = data.unread_count || 0;
+              if (count > 0 && badge) {
+                badge.textContent = count;
+                badge.classList.remove('hidden');
+              } else if (badge) {
+                badge.classList.add('hidden');
+              }
+              if (!dropdown.classList.contains('hidden')) {
+                if (count > 0 && data.html) {
+                  dropdownContent.innerHTML = data.html;
+                } else {
+                  dropdownContent.innerHTML = '<div class="p-4 text-sm text-[#1e2c4f]/60 italic text-center">Tidak ada notifikasi baru.</div>';
+                }
+              }
+            })
+            .catch(() => {});
+        }
+      }
+    }
+    return false;
+  });
+  
+  // === ENSURE MARK ALL READ BUTTON WORKS ===
+  // Pastikan handler "tandai semua dibaca" tetap berfungsi setelah jQuery dimuat
+  $('#markAllReadBtn').off('click.jqmarkread').on('click.jqmarkread', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    
+    const badge = document.getElementById('notif-badge');
+    const dropdownContent = document.getElementById('notifDropdownContent');
+    
+    // Get CSRF token
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+    const csrfToken = getCookie('csrftoken');
+    
+    fetch("{% url 'notifications:notification_mark_all_read' %}", {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrfToken }
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        if (badge) badge.classList.add('hidden');
+        if (dropdownContent) {
+          dropdownContent.innerHTML = '<div class="p-3 text-[#1e2c4f]/70 text-sm italic">Semua notifikasi sudah dibaca.</div>';
+        }
+      }
+    })
+    .catch(err => {
+      console.error('Error marking all as read:', err);
+    });
+    
+    return false;
   });
 });
 </script>

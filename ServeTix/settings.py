@@ -53,7 +53,7 @@ INSTALLED_APPS = [
     'payment',
     'voucher',
     'homepage',
-    'forums',    
+    'forums.apps.ForumsConfig',    
     'notifications',
     'apscheduler',
     'qr_code',

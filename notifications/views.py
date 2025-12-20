@@ -20,7 +20,8 @@ def unread_count_api(request):
     if request.method != 'GET':
         return HttpResponseForbidden()
     unread_count = Notification.objects.filter(user=request.user, is_read=False).count()
-    latest = Notification.objects.filter(user=request.user).order_by('-created_at')[:5]
+    # Hanya tampilkan notifikasi yang belum dibaca di dropdown
+    latest = Notification.objects.filter(user=request.user, is_read=False).order_by('-created_at')[:5]
     html_latest = render_to_string('notifications/partials/notification_items.html', {'notifications': latest}, request=request)
     return JsonResponse({'unread_count': unread_count, 'html': html_latest})
 
@@ -115,3 +116,14 @@ def api_notification_mark_all_read(request):
     
     Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
     return JsonResponse({'success': True, 'message': 'All notifications marked as read'})
+
+
+@login_required
+def delete_all_notifications_api(request):
+    """
+    POST: Delete all notifications for the authenticated user
+    """
+    if request.method != 'POST':
+        return HttpResponseForbidden()
+    Notification.objects.filter(user=request.user).delete()
+    return JsonResponse({'success': True, 'message': 'All notifications deleted'})

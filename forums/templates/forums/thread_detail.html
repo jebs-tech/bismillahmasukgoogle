@@ -3,60 +3,146 @@
 
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/forums.css' %}">
-<div id="thread-detail-container" data-thread-id="{{ thread.id }}" class="container mx-auto mt-10">
+<div id="thread-detail-container" data-thread-id="{{ thread.id }}" class="max-w-5xl mx-auto px-4 mt-10">
 
-  <!-- THREAD CARD -->
-  <!-- pastikan id="thread-card" & class thread-content ada supaya JS bisa membaca dan mengganti -->
-  <div id="thread-card" class="box thread-card">
-    <div class="thread-body">
-      <h2 class="thread-title">{{ thread.title }}</h2>
-      <p class="thread-content">{{ thread.content }}</p>
+  <!-- THREAD CARD (Main Thread) -->
+  <div id="thread-card" class="thread-detail-main mb-8">
+    <div class="thread-detail-card bg-[#fdf4d9] rounded-2xl shadow-lg border-l-4 border-brand-gold overflow-hidden">
+      <div class="p-8">
+        <!-- Header: Title & Score -->
+        <div class="flex items-start justify-between mb-4">
+          <div class="flex-1">
+            <h1 class="thread-title text-3xl font-bold text-brand-dark-blue mb-4">{{ thread.title }}</h1>
+            
+            <!-- Tags -->
+            {% if thread.tags.all %}
+            <div class="flex flex-wrap gap-2 mb-4">
+              {% for tag in thread.tags.all %}
+              <span class="bg-brand-gold/20 text-brand-dark-blue px-3 py-1 rounded-full text-sm font-semibold">
+                {{ tag.name }}
+              </span>
+              {% endfor %}
+            </div>
+            {% endif %}
+          </div>
 
-      <p class="meta-info">
-        Oleh {{ thread.author.username|default:"Anonim" }} • {{ thread.created_at|date:"d M Y H:i" }}
-      </p>
+          <!-- Vote Section -->
+          <div class="vote-buttons flex flex-col items-center gap-2 ml-6">
+            <button class="btn-upvote-thread" data-action="upvote" title="Upvote">
+              <i class='fas fa-arrow-circle-up text-2xl hover:text-green-500 transition-colors' style='color:rgb(197, 185, 131)'></i>
+            </button>
+            <span id="thread-{{ thread.id }}-score" class="font-bold text-brand-dark-blue text-xl">{{ thread.score }}</span>
+            <button class="btn-downvote-thread" data-action="downvote" title="Downvote">
+              <i class='fas fa-arrow-circle-down text-2xl hover:text-red-500 transition-colors' style='color:rgb(197, 185, 131)'></i>
+            </button>
+          </div>
+        </div>
 
-      <!-- VOTE BUTTONS -->
-      <div class="vote-buttons mt-3">
-        <button class="btn-upvote-thread" data-action="upvote" title="Upvote"><i class='fas fa-arrow-circle-up' style='color:rgb(197, 185, 131)'></i></button>
-        <span id="thread-{{ thread.id }}-score">{{ thread.score }}</span>
-        <button class="btn-downvote-thread" data-action="downvote" title="Downvote"><i class='fas fa-arrow-circle-down' style='color:rgb(197, 185, 131)'></i></button>
+        <!-- Content -->
+        <div class="thread-content text-gray-800 text-lg leading-relaxed mb-6 whitespace-pre-wrap">{{ thread.content }}</div>
+
+        <!-- Footer: Meta Info & Actions -->
+        <div class="flex items-center justify-between pt-6 border-t-2 border-brand-gold/40">
+          <div class="flex items-center gap-4 text-sm text-gray-600">
+          <span class="flex items-center gap-2">
+            <i class="fas fa-user-circle text-brand-dark-blue text-lg"></i>
+            <span class="font-medium">
+              {% if thread.author %}
+                {% if thread.author.profile.nama_lengkap %}
+                  {{ thread.author.profile.nama_lengkap }}
+                {% else %}
+                  {{ thread.author.username }}
+                {% endif %}
+              {% else %}
+                Anonim
+              {% endif %}
+            </span>
+          </span>
+            <span class="flex items-center gap-2">
+              <i class="far fa-clock text-brand-dark-blue"></i>
+              <span>{{ thread.created_at|date:"d M Y H:i" }}</span>
+            </span>
+            <span class="flex items-center gap-2">
+              <i class="far fa-comments text-brand-dark-blue"></i>
+              <span>{{ thread.replies.count }} balasan</span>
+            </span>
+          </div>
+
+          <!-- Action Buttons -->
+          {% if user.is_authenticated %}
+            {% if user == thread.author or user.is_superuser %}
+            <div class="flex gap-2">
+              <button class="btn-edit-thread bg-brand-gold hover:bg-yellow-400 text-brand-dark-blue px-4 py-2 rounded-lg font-semibold transition-colors" data-thread-id="{{ thread.id }}">
+                <i class="fas fa-edit"></i> Edit
+              </button>
+              <button class="btn-delete-thread bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors" data-thread-id="{{ thread.id }}">
+                <i class="fas fa-trash"></i> Hapus
+              </button>
+            </div>
+            {% endif %}
+          {% endif %}
+        </div>
       </div>
-
-      {% if user.is_superuser or user.is_authenticated and user == thread.author %}
-      <div class="mt-3 flex gap-2">
-        <!-- gunakan data-thread-id konsisten -->
-        <button class="btn-edit-thread text-white px-3 py-1 rounded-md hover:bg-[#ff8c00] transition" data-thread-id="{{ thread.id }}"> Edit</button>
-        <button class="btn-delete-thread text-white px-3 py-1 rounded-md hover:bg-red-600 transition" data-thread-id="{{ thread.id }}"> Delete</button>
-      </div>
-      {% endif %}
     </div>
   </div>
 
-  <!-- REPLIES -->
-  <div id="replies-container" class="mt-6">
+  <!-- DIVIDER SECTION -->
+  <div class="replies-section-divider mb-8">
+    <div class="flex items-center justify-center">
+      <div class="flex-1 border-t-2 border-brand-gold/30"></div>
+      <div class="px-6">
+        <h2 class="text-2xl font-bold text-brand-dark-blue flex items-center gap-2">
+          <i class="far fa-comments"></i>
+          <span>Balasan ({{ thread.replies.count }})</span>
+        </h2>
+      </div>
+      <div class="flex-1 border-t-2 border-brand-gold/30"></div>
+    </div>
+  </div>
+
+  <!-- REPLIES CONTAINER -->
+  <div id="replies-container" class="space-y-4 mb-8">
     {% for reply in replies %}
       {% include 'forums/threads/reply_card.html' %}
     {% empty %}
-      <p class="text-gray-600 italic text-center">Belum ada balasan.</p>
+      <div class="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
+        <i class="far fa-comment-dots text-4xl text-gray-400 mb-3"></i>
+        <p class="text-gray-600 italic">Belum ada balasan. Jadilah yang pertama membalas!</p>
+      </div>
     {% endfor %}
   </div>
 
-  <!-- REPLY INPUT -->
-  {% if user.is_authenticated %}
-  <div class="mt-6 flex justify-center">
-    <textarea
-      id="reply-input"
-      class="w-3/4 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-brand-gold outline-none transition"
-      rows="2"
-      placeholder="Tulis balasan lalu tekan Enter..."
-    ></textarea>
+  <!-- REPLY INPUT SECTION -->
+  <div class="reply-input-section mt-8 mb-10">
+    {% if user.is_authenticated %}
+    <div class="bg-white rounded-xl shadow-md border-2 border-brand-gold/20 p-6">
+      <h3 class="text-lg font-semibold text-brand-dark-blue mb-4 flex items-center gap-2">
+        <i class="fas fa-reply"></i>
+        <span>Tulis Balasan</span>
+      </h3>
+      <textarea
+        id="reply-input"
+        class="w-full border-2 border-gray-300 rounded-lg p-4 focus:ring-2 focus:ring-brand-gold focus:border-brand-gold outline-none transition text-gray-800"
+        rows="4"
+        placeholder="Tulis balasan kamu di sini... (Tekan Enter untuk mengirim, Shift+Enter untuk baris baru)"
+      ></textarea>
+      <div class="mt-3 flex justify-end">
+        <span class="text-xs text-gray-500">
+          <i class="fas fa-info-circle"></i> Tekan Enter untuk mengirim
+        </span>
+      </div>
+    </div>
+    {% else %}
+    <div class="bg-gray-50 rounded-xl border-2 border-dashed border-gray-300 p-8 text-center">
+      <i class="fas fa-lock text-3xl text-gray-400 mb-3"></i>
+      <p class="text-gray-600 mb-2">Silakan login untuk membalas thread ini.</p>
+      <a href="/login/" class="text-brand-orange font-semibold hover:underline inline-flex items-center gap-2">
+        <i class="fas fa-sign-in-alt"></i>
+        <span>Login sekarang</span>
+      </a>
+    </div>
+    {% endif %}
   </div>
-  {% else %}
-  <p class="text-center mt-4 text-gray-600">
-    Silakan <a href="/login/" class="text-brand-orange font-semibold hover:underline">login</a> untuk membalas.
-  </p>
-  {% endif %}
 </div>
 
 <!-- ========== EDIT MODAL ========== -->
@@ -199,6 +285,16 @@ document.addEventListener('DOMContentLoaded', function() {
               // gunakan HTML yang dikirim server (reply_card) sehingga tombol & vote ada
               repliesContainer.insertAdjacentHTML('beforeend', data.html);
             }
+            
+            // Trigger update notifikasi setelah reply dibuat (real-time update)
+            setTimeout(() => {
+              if (typeof window.fetchUnreadAndRender === 'function') {
+                window.fetchUnreadAndRender();
+              } else if (typeof fetchUnreadAndRender === 'function') {
+                fetchUnreadAndRender();
+              }
+            }, 300); // Delay pendek untuk memastikan notifikasi sudah dibuat di backend
+            
             this.value = '';
             // highlight singkat
             const newReply = document.getElementById(`reply-${data.reply_id}`);
@@ -223,6 +319,11 @@ document.addEventListener('DOMContentLoaded', function() {
   // DELEGATED CLICK HANDLER (edit / delete / vote both thread & replies)
   // ======================
   document.addEventListener('click', function(e) {
+    // Skip jika klik pada navbar elements (termasuk notifikasi button)
+    if (e.target.closest('nav') || e.target.closest('#notifButton') || e.target.closest('#notifDropdown')) {
+      return;
+    }
+    
     // ---- EDIT THREAD ----
     const editThreadBtn = e.target.closest('.btn-edit-thread');
     if (editThreadBtn) {

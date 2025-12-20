@@ -15,7 +15,7 @@ from .forms import ThreadForm, ReplyForm
 # ==== LIST THREAD ==========
 # ===============================
 def thread_list(request):
-    threads = Thread.objects.all().order_by('-created_at')
+    threads = Thread.objects.select_related('author', 'author__profile').prefetch_related('tags').order_by('-created_at')
     return render(request, 'forums/thread_list.html', {'threads': threads})
 
 
@@ -23,8 +23,8 @@ def thread_list(request):
 # ==== DETAIL THREAD =========
 # ===============================
 def thread_detail(request, thread_id):
-    thread = get_object_or_404(Thread, pk=thread_id)
-    replies = thread.replies.all().order_by('created_at')
+    thread = get_object_or_404(Thread.objects.select_related('author', 'author__profile').prefetch_related('tags'), pk=thread_id)
+    replies = thread.replies.select_related('author', 'author__profile').order_by('created_at')
     form = ReplyForm()
     return render(request, 'forums/thread_detail.html', {
         'thread': thread,
@@ -49,6 +49,8 @@ def create_thread_ajax(request):
         thread.save()
         form.save_m2m()
 
+        # Refresh thread dengan select_related untuk profile
+        thread = Thread.objects.select_related('author', 'author__profile').prefetch_related('tags').get(pk=thread.id)
         html = render_to_string('forums/threads/thread_card.html', {
             'thread': thread,
             'user': request.user
@@ -66,9 +68,11 @@ def edit_thread_ajax(request, thread_id):
     if thread.author is None or (request.user != thread.author and not request.user.is_superuser):
         return HttpResponseForbidden('Anda tidak mempunyai izin untuk mengedit thread ini.')
 
-    form = ThreadForm(request.POST, instance=thread)
+        form = ThreadForm(request.POST, instance=thread)
     if form.is_valid():
         form.save()
+        # Refresh thread dengan select_related untuk profile
+        thread = Thread.objects.select_related('author', 'author__profile').prefetch_related('tags').get(pk=thread.id)
         html = render_to_string('forums/threads/thread_card.html', {
             'thread': thread,
             'user': request.user
@@ -101,6 +105,8 @@ def reply_ajax(request, thread_id):
         reply.author = request.user
         reply.save()
 
+        # Refresh reply dengan select_related untuk profile
+        reply = Reply.objects.select_related('author', 'author__profile').get(pk=reply.id)
         # Render ke template reply_card.html, bukan partials lama
         html = render_to_string(
             'forums/threads/reply_card.html',
@@ -131,6 +137,8 @@ def edit_reply_ajax(request, reply_id):
     form = ReplyForm(request.POST, instance=reply)
     if form.is_valid():
         reply = form.save()
+        # Refresh reply dengan select_related untuk profile
+        reply = Reply.objects.select_related('author', 'author__profile').get(pk=reply.id)
         html = render_to_string(
             'forums/threads/reply_card.html',
             {'reply': reply, 'user': request.user},

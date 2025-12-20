@@ -71,6 +71,7 @@ body {
 .line-clamp-3 {
   display: -webkit-box;
   -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -169,16 +170,55 @@ body {
 }
 
 /* ==========================================
-   REPLY BOX STYLE (MINI VERSION OF THREAD)
+   THREAD DETAIL PAGE STYLING
 ========================================== */
 
+/* Main Thread Card in Detail Page */
+.thread-detail-main {
+  width: 100%;
+}
+
+.thread-detail-card {
+  background-color: #fdf4d9;
+  box-shadow: 0px 6px 20px rgba(0, 0, 0, 0.12);
+  transition: all 0.3s ease;
+}
+
+.thread-detail-card:hover {
+  box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.18);
+}
+
+/* Replies Section Divider */
+.replies-section-divider {
+  margin: 3rem 0 2rem 0;
+}
+
+/* ==========================================
+   REPLY CARD STYLE (COMPACT VERSION)
+========================================== */
+
+.reply-item {
+  width: 100%;
+}
+
+.reply-card {
+  background-color: #ffffff;
+  transition: all 0.2s ease;
+}
+
+.reply-card:hover {
+  transform: translateX(4px);
+}
+
+
+/* Legacy support for .reply-box */
 .reply-box {
-  background-color: #fffaf0;               /* Warna krem lebih terang */
-  border-left: 5px solid #ffc107;          /* Aksen brand gold */
+  background-color: #fffaf0;
+  border-left: 5px solid #ffc107;
   border-radius: 10px;
   padding: 1rem 1.5rem;
   margin-top: 1rem;
-  margin-left: 2rem;                      /* sedikit masuk dari thread utama */
+  margin-left: 2rem;
   margin-right: 2rem;
   box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
@@ -193,7 +233,61 @@ body {
 .reply-content {
   font-size: 1rem;
   color: #333;
-  line-height: 1.6;
+  line-height: 1.7;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+/* Reply Input Section */
+.reply-input-section {
+  width: 100%;
+}
+
+/* ==== Reply Card Voting Buttons ==== */
+.reply-card .vote-buttons button {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: transform 0.15s ease, color 0.15s ease;
+  padding: 4px;
+}
+
+.reply-card .btn-upvote-reply:hover {
+  color: #22c55e;
+  transform: scale(1.15);
+}
+
+.reply-card .btn-downvote-reply:hover {
+  color: #ef4444;
+  transform: scale(1.15);
+}
+
+.reply-card span[id^="reply-"][id$="-score"] {
+  font-weight: 600;
+  color: #1a2a4b;
+  font-size: 0.95rem;
+}
+
+/* ==== Reply Card Edit & Delete Buttons ==== */
+.reply-card .btn-edit,
+.reply-card .btn-delete {
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+}
+
+.reply-card .btn-edit:hover,
+.reply-card .btn-delete:hover {
+  transform: translateY(-1px);
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.15);
 }
 
 /* ==== Info Penulis ==== */

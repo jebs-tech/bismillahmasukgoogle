@@ -9,8 +9,15 @@
     <div class="flex items-center justify-between mb-8 border-b border-[#f6ca50]/60 pb-3">
       <h2 class="text-3xl font-bold text-[#1e2c4f] flex items-center gap-3">
         <i class="far fa-bell text-[#f6ca50] text-2xl"></i>
-        Notifikasi Pertandingan
+        Notifikasi 
       </h2>
+      {% if notifications %}
+      <button id="deleteAllBtn" 
+              class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors flex items-center gap-2">
+        <i class="fas fa-trash"></i>
+        Hapus Semua
+      </button>
+      {% endif %}
     </div>
 
     <!-- Daftar Notifikasi -->
@@ -35,4 +42,190 @@
 
   </div>
 </div>
+
+<!-- ========== CONFIRM DELETE ALL MODAL ========== -->
+<div id="confirmDeleteAllModal" class="fixed inset-0 bg-black bg-opacity-50 hidden justify-center items-center z-50 backdrop-blur-sm">
+  <div class="delete-all-modal-content bg-white rounded-2xl shadow-2xl w-11/12 max-w-md p-8 relative mx-4">
+    <!-- Icon Warning -->
+    <div class="flex justify-center mb-5">
+      <div class="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center animate-pulse">
+        <i class="fas fa-exclamation-triangle text-red-500 text-4xl"></i>
+      </div>
+    </div>
+    
+    <!-- Title -->
+    <h3 class="text-2xl font-bold text-brand-dark-blue mb-4 text-center">
+      Hapus Semua Notifikasi?
+    </h3>
+    
+    <!-- Message -->
+    <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg mb-6">
+      <p class="text-gray-800 text-center leading-relaxed">
+        Apakah kamu yakin ingin menghapus semua notifikasi?<br>
+        <span class="font-bold text-red-600 mt-2 block">⚠️ Tindakan ini tidak dapat dibatalkan!</span>
+      </p>
+    </div>
+    
+    <!-- Buttons -->
+    <div class="flex justify-end gap-3">
+      <button id="cancelDeleteAllBtn" 
+              class="px-6 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-semibold transition-all hover:shadow-md">
+        <i class="fas fa-times mr-2"></i>Batal
+      </button>
+      <button id="confirmDeleteAllBtn" 
+              class="px-6 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold transition-all hover:shadow-lg flex items-center gap-2">
+        <i class="fas fa-trash"></i>
+        Hapus Semua
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const deleteAllBtn = document.getElementById('deleteAllBtn');
+  const confirmDeleteAllModal = document.getElementById('confirmDeleteAllModal');
+  const cancelDeleteAllBtn = document.getElementById('cancelDeleteAllBtn');
+  const confirmDeleteAllBtn = document.getElementById('confirmDeleteAllBtn');
+  
+  // Get CSRF token function
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+  
+  // Open modal function
+  function openDeleteAllModal() {
+    confirmDeleteAllModal.classList.remove('hidden');
+    confirmDeleteAllModal.classList.add('flex');
+    document.body.classList.add('overflow-hidden');
+    // Add animation
+    setTimeout(() => {
+      const modalContent = confirmDeleteAllModal.querySelector('.delete-all-modal-content');
+      if (modalContent) {
+        modalContent.style.transform = 'scale(1)';
+        modalContent.style.opacity = '1';
+      }
+    }, 10);
+  }
+  
+  // Close modal function
+  function closeDeleteAllModal() {
+    const modalContent = confirmDeleteAllModal.querySelector('.delete-all-modal-content');
+    if (modalContent) {
+      modalContent.style.transform = 'scale(0.95)';
+      modalContent.style.opacity = '0';
+    }
+    setTimeout(() => {
+      confirmDeleteAllModal.classList.add('hidden');
+      confirmDeleteAllModal.classList.remove('flex');
+      document.body.classList.remove('overflow-hidden');
+    }, 200);
+  }
+  
+  // Open modal when delete all button clicked
+  if (deleteAllBtn) {
+    deleteAllBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      openDeleteAllModal();
+    });
+  }
+  
+  // Close modal on cancel
+  if (cancelDeleteAllBtn) {
+    cancelDeleteAllBtn.addEventListener('click', closeDeleteAllModal);
+  }
+  
+  // Close modal when clicking backdrop
+  confirmDeleteAllModal.addEventListener('click', function(e) {
+    if (e.target === confirmDeleteAllModal) {
+      closeDeleteAllModal();
+    }
+  });
+  
+  // Handle delete confirmation
+  if (confirmDeleteAllBtn) {
+    confirmDeleteAllBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      
+      const csrfToken = getCookie('csrftoken');
+      
+      // Disable button and show loading
+      confirmDeleteAllBtn.disabled = true;
+      confirmDeleteAllBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menghapus...';
+      
+      fetch("{% url 'notifications:notification_delete_all' %}", {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': csrfToken
+        }
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          // Close modal and reload page
+          closeDeleteAllModal();
+          setTimeout(() => {
+            window.location.reload();
+          }, 300);
+        } else {
+          alert('Gagal menghapus notifikasi.');
+          confirmDeleteAllBtn.disabled = false;
+          confirmDeleteAllBtn.innerHTML = '<i class="fas fa-trash"></i> Hapus Semua';
+        }
+      })
+      .catch(err => {
+        console.error('Error:', err);
+        alert('Terjadi kesalahan saat menghapus notifikasi.');
+        confirmDeleteAllBtn.disabled = false;
+        confirmDeleteAllBtn.innerHTML = '<i class="fas fa-trash"></i> Hapus Semua';
+      });
+    });
+  }
+  
+  // Close modal with ESC key
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && !confirmDeleteAllModal.classList.contains('hidden')) {
+      closeDeleteAllModal();
+    }
+  });
+});
+</script>
+
+<style>
+.delete-all-modal-content {
+  transform: scale(0.95);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+#confirmDeleteAllModal.flex .delete-all-modal-content {
+  transform: scale(1);
+  opacity: 1;
+}
+
+/* Animation untuk icon warning */
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+</style>
 {% endblock %}
