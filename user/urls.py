@@ -12,6 +12,19 @@ urlpatterns = [
     path('login/', views.login_user, name='login'),
     path('logout/', views.logout_user, name='logout'),
     
+    # API untuk Flutter
+    path('api/login/', views.login_flutter, name='login_flutter'),
+    path('api/register/', views.register_flutter, name='register_flutter'),
+    path('api/logout/', views.logout_flutter, name='logout_flutter'),
+    path('api/reset-password/', views.reset_password_flutter, name='reset_password_flutter'),
+    
+    path('api/dashboard/', views.dashboard_flutter, name='dashboard_flutter'),
+    path('api/profile/edit/', views.edit_profile_flutter, name='edit_profile_flutter'),
+    path('api/tickets/active/', views.get_active_tickets_flutter, name='active_tickets_flutter'),
+    path('api/tickets/history/', views.get_purchase_history_flutter, name='history_tickets_flutter'),
+    path('api/tickets/detail/<int:purchase_id>/', views.ticket_detail_flutter, name='ticket_detail_flutter'),
+    path('api/teams/', views.get_all_teams_flutter, name='get_all_teams_flutter'),
+    
     # URL Dashboard
     path('profile/', views.user_profile_view, name='profile'),
 
