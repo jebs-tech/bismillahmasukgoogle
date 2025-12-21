@@ -12,6 +12,54 @@ from .forms import MatchForm
 from django.contrib import messages
 
 @csrf_exempt
+def api_create_match(request):
+    """API khusus untuk Flutter"""
+    print(f"🎯 API CREATE DIPANGGIL! Method: {request.method}")
+    print(f"📦 Request body: {request.body}")
+    print(f"📦 Content-Type: {request.content_type}")
+    
+    if request.method == 'POST':
+        try:
+            print("✅ MASUK POST BLOCK")
+            import json
+            data = json.loads(request.body)
+            print(f"📱 Flutter API data: {data}")
+            
+            # Cari atau buat Team dari nama
+            from .models import Team, Venue
+            
+            team_a, _ = Team.objects.get_or_create(name=data.get('team_a'))
+            team_b, _ = Team.objects.get_or_create(name=data.get('team_b'))
+            venue, _ = Venue.objects.get_or_create(
+                name=data.get('venue'), 
+                defaults={'address': 'Default address'}
+            )
+            
+            # Buat Match
+            from django.utils.dateparse import parse_datetime
+            match = Match.objects.create(
+                title=data.get('title'),
+                team_a=team_a,
+                team_b=team_b,
+                venue=venue,
+                start_time=parse_datetime(data.get('start_time')),
+                description=data.get('description', ''),
+                price_from=data.get('price_from', 75000),
+            )
+            
+            return JsonResponse({
+                'success': True,
+                'id': match.id,
+                'message': 'Match created via API'
+            })
+            
+        except Exception as e:
+            print("❌ API error:", e)
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
+    
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+@csrf_exempt
 def api_match_list(request):
     """API endpoint for Flutter app (returns JSON)"""
     try:

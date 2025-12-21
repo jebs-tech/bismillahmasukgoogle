@@ -12,4 +12,5 @@ urlpatterns = [
     path('json/', views.show_json, name='show_json'),
     path('api/matches/', views.api_match_list, name='api_match_list'),
     path('api/matches/<int:id>/delete/', views.api_match_delete, name='api_match_delete'),
+    path('api/matches/create/', views.api_create_match, name='api_create_match'),
 ]
