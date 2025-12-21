@@ -355,8 +355,10 @@ def api_thread_detail(request, thread_id):
                 'upvotes': thread.total_upvotes(),
                 'downvotes': thread.total_downvotes(),
                 'score': thread.score(),
+                'reply_count': thread.replies.count(),
                 'has_upvoted': request.user.is_authenticated and request.user in thread.upvotes.all(),
                 'has_downvoted': request.user.is_authenticated and request.user in thread.downvotes.all(),
+                'is_author': request.user.is_authenticated and thread.author is not None and request.user == thread.author,
                 'replies': replies_data,
             }
         })
@@ -396,6 +398,25 @@ def api_thread_detail(request, thread_id):
         
         thread.delete()
         return JsonResponse({'success': True, 'message': 'Thread deleted'})
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def api_thread_delete(request, thread_id):
+    """
+    POST: Delete thread (alternative endpoint for Flutter CookieRequest compatibility)
+    Requires authentication and ownership
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({'success': False, 'error': 'Authentication required'}, status=401)
+    
+    thread = get_object_or_404(Thread, pk=thread_id)
+    
+    if thread.author is None or (request.user != thread.author and not request.user.is_superuser):
+        return JsonResponse({'success': False, 'error': 'Permission denied'}, status=403)
+    
+    thread.delete()
+    return JsonResponse({'success': True, 'message': 'Thread deleted'})
 
 
 @csrf_exempt

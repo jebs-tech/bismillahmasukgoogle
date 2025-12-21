@@ -542,61 +542,105 @@ document.addEventListener('keydown', function(e) {
         function fetchUnreadAndRender() {
             // Prevent concurrent requests
             if (isPolling) return;
+            
+            // Pastikan elemen masih ada (untuk menghindari error setelah navigasi)
+            const currentBadge = document.getElementById('notif-badge');
+            const currentDropdown = document.getElementById('notifDropdown');
+            const currentDropdownContent = document.getElementById('notifDropdownContent');
+            
+            if (!currentBadge) {
+                // Jika elemen tidak ada, skip polling (mungkin sedang di halaman yang tidak memiliki navbar)
+                return;
+            }
+            
             isPolling = true;
             
             fetch("{% url 'notifications:notification_unread_count' %}")
-            .then(r => r.json())
+            .then(r => {
+                if (!r.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return r.json();
+            })
             .then(data => {
                 const count = data.unread_count || 0;
                 const prevCount = lastUnread;
                 
-                // badge update
-                if (count > 0) {
-                    badge.textContent = count;
-                    badge.classList.remove('hidden');
-                } else {
-                    badge.classList.add('hidden');
+                // badge update - pastikan elemen masih ada sebelum update
+                const badgeEl = document.getElementById('notif-badge');
+                if (badgeEl) {
+                    if (count > 0) {
+                        badgeEl.textContent = count;
+                        badgeEl.classList.remove('hidden');
+                    } else {
+                        badgeEl.classList.add('hidden');
+                    }
                 }
                 
-                // isi dropdown jika terbuka
-                if (!dropdown.classList.contains('hidden')) {
+                // isi dropdown jika terbuka - pastikan elemen masih ada
+                const dropdownEl = document.getElementById('notifDropdown');
+                const dropdownContentEl = document.getElementById('notifDropdownContent');
+                if (dropdownEl && dropdownContentEl && !dropdownEl.classList.contains('hidden')) {
                     if (count > 0 && data.html) {
-                        dropdownContent.innerHTML = data.html;
+                        dropdownContentEl.innerHTML = data.html;
                     } else {
                         // Jika semua sudah dibaca, tampilkan pesan
-                        dropdownContent.innerHTML = '<div class="p-4 text-sm text-[#1e2c4f]/60 italic text-center">Tidak ada notifikasi baru.</div>';
+                        dropdownContentEl.innerHTML = '<div class="p-4 text-sm text-[#1e2c4f]/60 italic text-center">Tidak ada notifikasi baru.</div>';
                     }
                 }
                 
                 // toast muncul kalau ada notif baru (hanya jika count bertambah)
-                if (prevCount !== null && count > prevCount) {
-                    showToast(`🔔 Kamu punya ${count - prevCount} notifikasi baru`);
+                // Hanya tampilkan toast jika ada perubahan dari null (initial load) atau count meningkat
+                if (prevCount !== null && count > prevCount && typeof showToast === 'function') {
+                    const newCount = count - prevCount;
+                    showToast(`🔔 Kamu punya ${newCount} notifikasi baru`);
                 }
                 
                 lastUnread = count;
                 isPolling = false;
             })
-            .catch(() => {
+            .catch((err) => {
+                console.error('Error fetching notifications:', err);
                 isPolling = false;
             });
         }
         
-        // Expose function globally untuk akses dari jQuery handlers di halaman lain
-        window.fetchUnreadAndRender = fetchUnreadAndRender;
-
         // === Floating toast ===
         function showToast(message) {
+            // Pastikan toastContainer ada
+            const container = document.getElementById('toast-container');
+            if (!container) {
+                console.error('toast-container not found');
+                return;
+            }
+            
             const toast = document.createElement('div');
             toast.className = "bg-[#fdf4d9] border-l-4 border-[#f6ca50] text-[#1e2c4f] px-5 py-3 rounded-lg shadow-md font-medium animate-slideUp";
             toast.textContent = message;
-            toastContainer.appendChild(toast);
+            container.appendChild(toast);
             setTimeout(() => toast.classList.add('fade-out'), 3000);
             setTimeout(() => toast.remove(), 3500);
         }
+        
+        // Expose functions globally untuk akses dari jQuery handlers di halaman lain
+        window.fetchUnreadAndRender = fetchUnreadAndRender;
+        window.showToast = showToast;
 
         // initial + interval - Polling lebih agresif untuk real-time updates
+        // Pastikan polling berjalan di semua halaman
+        // Panggil sekali saat DOM ready
         fetchUnreadAndRender();
-        setInterval(fetchUnreadAndRender, 2000); // Update setiap 2 detik untuk real-time experience
+        
+        // Set up interval polling - berjalan setiap 2 detik
+        const pollingInterval = setInterval(function() {
+            // Pastikan fungsi masih ada dan bisa dipanggil
+            if (typeof fetchUnreadAndRender === 'function') {
+                fetchUnreadAndRender();
+            }
+        }, 2000); // Update setiap 2 detik untuk real-time experience
+        
+        // Simpan interval ID untuk cleanup jika diperlukan (opsional)
+        window.notificationPollingInterval = pollingInterval;
         });
         </script>
 
