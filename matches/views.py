@@ -11,6 +11,106 @@ from django.http import JsonResponse
 from .forms import MatchForm
 from django.contrib import messages
 
+@csrf_exempt
+def api_match_list(request):
+    """API endpoint for Flutter app (returns JSON)"""
+    try:
+        matches = Match.objects.select_related('team_a', 'team_b', 'venue').order_by('start_time')
+        
+        # Filter by month
+        month_filter = request.GET.get('month')
+        if month_filter:
+            matches = matches.filter(start_time__month=int(month_filter))
+        
+        # Build JSON response
+        data = []
+        for match in matches:
+            data.append({
+                'id': match.id,
+                'title': match.title,
+                'team_a': {
+                    'name': match.team_a.name,
+                    'logo': match.team_a.logo.url if match.team_a.logo else None
+                },
+                'team_b': {
+                    'name': match.team_b.name,
+                    'logo': match.team_b.logo.url if match.team_b.logo else None
+                },
+                'venue': {
+                    'name': match.venue.name,
+                    'address': match.venue.address
+                },
+                'start_time': match.start_time.isoformat(),
+                'description': match.description,
+                'price_from': match.price_from
+            })
+        
+        return JsonResponse(data, safe=False)
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@csrf_exempt  
+def api_match_delete(request, id):
+    """API endpoint to delete match"""
+    if request.method == 'POST':
+        try:
+            match = Match.objects.get(id=id)
+            match.delete()
+            return JsonResponse({'success': True})
+        except Match.DoesNotExist:
+            return JsonResponse({'error': 'Match not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+def show_json_by_id(request, pk):
+    try:
+        matches = Match.objects.select_related('user').get(pk=pk)
+        data = {
+            'id': str(matches.id),
+            'name': matches.name,
+            'description': matches.description,
+            'category': matches.category,
+            'thumbnail': matches.thumbnail,
+            'views': matches.views,
+            'created_at': matches.created_at.isoformat() if matches.created_at else None,
+            'is_featured': matches.is_featured,
+            'user_id': matches.user_id,
+            'user_username': matches.user.username if matches.user_id else None,
+        }
+        return JsonResponse(data)
+    except Match.DoesNotExist:
+        return JsonResponse({'detail': 'Not found'}, status=404)
+
+def show_json(request):
+    """Return JSON untuk model Match (pertandingan voli)"""
+    matches_list = Match.objects.select_related('team_a', 'team_b', 'venue').all()
+    
+    data = []
+    for match in matches_list:
+        data.append({
+            'id': match.id,
+            'title': match.title or f"{match.team_a.name if match.team_a else 'Team A'} vs {match.team_b.name if match.team_b else 'Team B'}",
+            'team_a': {
+                'name': match.team_a.name if match.team_a else 'Team A',
+                'logo': match.team_a.logo.url if match.team_a and match.team_a.logo else None,
+            },
+            'team_b': {
+                'name': match.team_b.name if match.team_b else 'Team B',
+                'logo': match.team_b.logo.url if match.team_b and match.team_b.logo else None,
+            },
+            'venue': {
+                'name': match.venue.name if match.venue else 'Unknown',
+                'address': match.venue.address if match.venue else '',
+            },
+            'start_time': match.start_time.isoformat(),
+            'description': match.description or '',
+            'price_from': match.price_from,
+        })
+    
+    return JsonResponse(data, safe=False)
+
 def is_staff(user):
     return user.is_staff
 
