@@ -24,6 +24,8 @@ urlpatterns = [
     path('api/tickets/history/', views.get_purchase_history_flutter, name='history_tickets_flutter'),
     path('api/tickets/detail/<int:purchase_id>/', views.ticket_detail_flutter, name='ticket_detail_flutter'),
     path('api/teams/', views.get_all_teams_flutter, name='get_all_teams_flutter'),
+    path('api/purchase/detail/<int:match_id>/', views.purchase_detail_flutter, name='api_purchase_detail'),
+    path('api/ticket/detail/<int:ticket_id>/', views.ticket_detail_flutter, name='api_ticket_detail'),
     
     # URL Dashboard
     path('profile/', views.user_profile_view, name='profile'),

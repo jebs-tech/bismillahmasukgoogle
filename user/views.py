@@ -357,35 +357,113 @@ def get_purchase_history_flutter(request):
         "history": data_history
     }, status=200)
     
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.shortcuts import get_object_or_404
+from matches.models import Match, Seat # Sesuaikan path import
+from payment.models import Pembelian   # Sesuaikan path import
+
+# --- API: Detail Pembelian (List Tiket dalam 1 Transaksi) ---
 @csrf_exempt
-def ticket_detail_flutter(request, purchase_id):
+def purchase_detail_flutter(request, match_id):
     if not request.user.is_authenticated:
-        return JsonResponse({"status": False, "message": "Belum login"}, status=401)
-        
+        return JsonResponse({"status": False, "message": "Unauthorized"}, status=401)
+
+    # Ambil Match
+    match = get_object_or_404(Match, id=match_id)
+    
     try:
-        purchase = Pembelian.objects.get(id=purchase_id, user=request.user)
-        seats = purchase.seats.all()
+        # Ambil Pembelian yang statusnya CONFIRMED untuk user & match ini
+        purchase = Pembelian.objects.get(
+            user=request.user, 
+            match=match, 
+            status='CONFIRMED'
+        )
         
-        list_seats = []
-        for seat in seats:
-            list_seats.append({
-                "seat_id": seat.id,
-                "category": seat.category.name,
+        # Ambil semua kursi/tiket dalam pembelian ini
+        tickets = purchase.seats.all().order_by('row', 'col')
+        
+        # Serialize data tiket
+        tickets_data = []
+        for seat in tickets:
+            tickets_data.append({
+                "id": seat.id,
                 "row": seat.row,
                 "col": seat.col,
-                "code": f"{seat.category.name}-{seat.row}{seat.col}" # Contoh kode kursi
+                "category": seat.category.name if seat.category else "-",
+                "price": seat.category.price if seat.category else 0, # Asumsi ada field price
+                "seat_code": f"{seat.row}{seat.col}" # Contoh kode kursi
             })
-            
+
         return JsonResponse({
             "status": True,
-            "match": str(purchase.match),
-            "seats": list_seats
-        }, 200)
+            "data": {
+                "match_title": f"{match.team_a} vs {match.team_b}",
+                "venue": match.venue.name if match.venue else "TBA",
+                "date": match.start_time.strftime("%d %B %Y, %H:%M"),
+                "purchase_id": purchase.id,
+                "tickets": tickets_data
+            }
+        }, status=200)
+
     except Pembelian.DoesNotExist:
-        return JsonResponse({"status": False, "message": "Pembelian tidak ditemukan"}, status=404)
+        return JsonResponse({
+            "status": False, 
+            "message": "Data pembelian tidak ditemukan atau belum dikonfirmasi."
+        }, status=404)
 
 
-from matches.models import Team # <--- Pastikan import ini benar sesuai model kamu
+# --- API: Detail Satu Tiket (Untuk Modal QR Code) ---
+@csrf_exempt
+def ticket_detail_flutter(request, ticket_id):
+    if not request.user.is_authenticated:
+        return JsonResponse({"status": False, "message": "Unauthorized"}, status=401)
+
+    # Cari seat/tiket spesifik milik user
+    # Kita gunakan filter yang sama seperti views asli untuk keamanan
+    try:
+        seat = Seat.objects.select_related(
+            'match', 'category', 'match__venue', 'match__team_a', 'match__team_b'
+        ).get(
+            id=ticket_id,
+            pembelian_set__user=request.user,
+            pembelian_set__status='CONFIRMED'
+        )
+    except Seat.DoesNotExist:
+         return JsonResponse({"status": False, "message": "Tiket tidak ditemukan"}, status=404)
+    
+    # Ambil Pembelian Terkait (Logic sama dengan views asli)
+    booking_id = "-"
+    try:
+        purchase = Pembelian.objects.get(seats=seat, user=request.user, status='CONFIRMED')
+        booking_id = purchase.id
+    except Pembelian.DoesNotExist:
+        pass
+    except Pembelian.MultipleObjectsReturned:
+        purchase = Pembelian.objects.filter(seats=seat, user=request.user, status='CONFIRMED').first()
+        if purchase: booking_id = purchase.id
+
+    # Siapkan URL QR Code
+    # Note: Di Flutter nanti harus ditambah base_url (http://10.0.2.2:8000) di depannya
+    qr_code_url = ""
+    if seat.file_qr_code:
+        qr_code_url = seat.file_qr_code.url 
+
+    return JsonResponse({
+        "status": True,
+        "data": {
+            "ticket_id": seat.id,
+            "match_title": f"{seat.match.team_a} vs {seat.match.team_b}",
+            "venue": seat.match.venue.name if seat.match.venue else "TBA",
+            "date": seat.match.start_time.strftime("%d %B %Y, %H:%M"),
+            "category": seat.category.name if seat.category else "-",
+            "row": seat.row,
+            "col": seat.col,
+            "price": seat.category.price if seat.category else 0,
+            "booking_id": booking_id,
+            "qr_code_url": qr_code_url, # String URL untuk Image.network di Flutter
+        }
+    }, status=200)
 
 @csrf_exempt
 def get_all_teams_flutter(request):
