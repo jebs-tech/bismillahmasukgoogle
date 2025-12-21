@@ -13,7 +13,7 @@ from django.contrib import messages
 
 @csrf_exempt
 def api_create_match(request):
-    """API khusus untuk Flutter (tanpa CSRF check)"""
+    """API khusus untuk Flutter"""
     print(f"🎯 API CREATE DIPANGGIL! Method: {request.method}")
     print(f"📦 Request body: {request.body}")
     print(f"📦 Content-Type: {request.content_type}")
