@@ -20,7 +20,7 @@ urlpatterns = [
     path('vouchers/', include('voucher.urls', namespace='voucher')),
     path('api/payment/', include('payment.api_urls')),
     path("api/user/", include("user.api_urls")),
-
+    path('api/matches/', include('matches.api_urls')),
 ]
 
 if settings.DEBUG:
