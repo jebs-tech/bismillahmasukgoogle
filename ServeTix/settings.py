@@ -182,3 +182,16 @@ DEFAULT_FROM_EMAIL = 'Servetix <no-reply@servetix.com>'
 # SENDGRID_API_KEY = 'YOUR_API_KEY'
 
 CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SAMESITE = 'None'
+SESSION_COOKIE_SAMESITE = 'None'
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost",  # Web
+    "http://10.0.2.2",  # Android Emulator
+    "http://192.168.1.x",  # Your network IP
+    "http://127.0.0.1",  # Localhost
+    "jenisa-bunga-servetix.pbp.cs.ui.ac.id", # PBP Deploy
+]
