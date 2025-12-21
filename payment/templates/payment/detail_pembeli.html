@@ -298,6 +298,21 @@
                     return;
                 }
 
+                // Validasi bahwa match_id dan kategori_id adalah angka valid
+                const matchIdInt = parseInt(matchIdValue, 10);
+                const kategoriIdInt = parseInt(kategoriValue, 10);
+                
+                if (isNaN(matchIdInt)) {
+                    alert('Error: Match ID tidak valid. Silakan refresh halaman dan coba lagi.');
+                    return;
+                }
+                
+                if (isNaN(kategoriIdInt)) {
+                    alert('Error: Kategori ID tidak valid. Silakan pilih kategori tempat duduk.');
+                    selectKategori.focus();
+                    return;
+                }
+
                 // Kumpulkan data tiket
                 const tickets = [];
                 for (let i = 1; i <= jumlahTiket; i++) {
@@ -314,9 +329,9 @@
                     nomor_telepon: formData.get('nomor_telepon'),
                     tickets: tickets,
 
-                    // KUNCI BARU: Kirim Match ID dan Kategori ID
-                    match_id: matchIdValue,
-                    kategori_id: kategoriValue,
+                    // KUNCI BARU: Kirim Match ID dan Kategori ID (sudah di-parse di atas)
+                    match_id: matchIdInt,
+                    kategori_id: kategoriIdInt,
 
                     // KATEGORI TERPILIH untuk disimpan di model Tiket
                     kategori_terpilih: KATEGORI_TERPILIH,
