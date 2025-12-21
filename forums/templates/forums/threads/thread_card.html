@@ -1,0 +1,33 @@
+{% load static %}
+<!-- partials/thread_card.html -->
+<div class="box thread-card" id="thread-{{ thread.id }}" data-thread-id="{{ thread.id }}">
+  <div class="thread-body">
+    <!-- Judul -->
+    <h3 class="thread-title mb-2">
+      <a href="{% url 'forums:thread_detail' thread.id %}" class="hover:text-brand-orange transition-colors duration-200">
+        {{ thread.title }}
+      </a>
+    </h3>
+
+    <!-- Isi Thread -->
+    <p class="thread-content mb-3">{{ thread.content }}</p>
+
+    <!-- Vote Buttons -->
+    <div class="vote-buttons flex items-center gap-2 mt-2">
+      <button class="btn-upvote-thread" data-action="upvote" title="Upvote"><i class='fas fa-arrow-circle-up' style='color:rgb(197, 185, 131)'></i></button>
+      <span id="thread-{{ thread.id }}-score">{{ thread.score }}</span>
+      <button class="btn-downvote-thread" data-action="downvote" title="Downvote"><i class='fas fa-arrow-circle-down' style='color:rgb(197, 185, 131)'></i></button>
+    </div>
+
+    <!-- Info Penulis -->
+    <p class="meta-info mt-3 text-sm text-gray-600">
+      Oleh 
+      {% if thread.author %}
+        {{ thread.author.username }}
+      {% else %}
+        Anonim
+      {% endif %}
+      • {{ thread.created_at|date:"d M Y H:i" }}
+    </p>
+  </div>
+</div>

@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Notifikasi Pertandingan - SERVE.TIX{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-t from-[#fff7d1] to-[#ffffff] py-12 px-6 sm:px-10">
+  <div class="max-w-3xl mx-auto">
+
+    <!-- Judul -->
+    <div class="flex items-center justify-between mb-8 border-b border-[#f6ca50]/60 pb-3">
+      <h2 class="text-3xl font-bold text-[#1e2c4f] flex items-center gap-3">
+        <i class="far fa-bell text-[#f6ca50] text-2xl"></i>
+        Notifikasi Pertandingan
+      </h2>
+    </div>
+
+    <!-- Daftar Notifikasi -->
+    <div class="space-y-5">
+      {% for n in notifications %}
+        <div class="bg-[#fdf4d9] border-l-4 {% if n.is_read %}border-gray-300{% else %}border-[#f6ca50]{% endif %}
+                    rounded-2xl shadow-md p-5 transition transform hover:-translate-y-1 hover:shadow-lg">
+          <div class="flex justify-between items-start">
+            <p class="text-[#1e2c4f] font-medium leading-snug">{{ n.message }}</p>
+            {% if not n.is_read %}
+              <span class="ml-3 flex-shrink-0 w-2.5 h-2.5 bg-[#f6ca50] rounded-full" title="Belum dibaca"></span>
+            {% endif %}
+          </div>
+          <p class="text-xs text-gray-500 mt-2">{{ n.created_at|date:"d M Y, H:i" }}</p>
+        </div>
+      {% empty %}
+        <div class="text-center text-[#1e2c4f]/60 italic py-10 bg-[#fdf4d9] rounded-xl shadow-inner border border-[#f6ca50]/30">
+          Belum ada notifikasi pertandingan.
+        </div>
+      {% endfor %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

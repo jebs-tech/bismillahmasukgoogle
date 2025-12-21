@@ -3,12 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% load static %}
     <title>{% block title %}SERVE.TIX{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-
+    
+    <script src="https://unpkg.com/htmx.org@1.9.12" integrity="sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2" crossorigin="anonymous"></script>
+    <script src="https://kit.fontawesome.com/d74cb82a83.js" crossorigin="anonymous"></script>
+    <script>
+        // Konfigurasi warna kustom Tailwind agar sesuai
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'brand-dark-blue': '#1a2a4b', 
+                        'brand-gold': '#FFC107',
+                        'brand-orange': '#FFA043',
+                        'brand-light-blue': '#4A69BD',
+                    }
+                }
+            }
+        }
+    </script>
+    
     <style>
         body {
             font-family: 'DM Sans', sans-serif;
@@ -16,85 +36,243 @@
         .logo-text {
             font-family: 'Roboto', sans-serif;
         }
+        /* Style HTMX */
+        .htmx-indicator {
+            display: none;
+            opacity: 0;
+            transition: opacity 200ms ease-in;
+        }
+        .htmx-request .htmx-indicator {
+            display: inline;
+            opacity: 1;
+        }
+        .htmx-request.htmx-indicator {
+            display: inline;
+            opacity: 1;
+        }
     </style>
 </head>
-<body class="bg-gray-50">
+<body class="bg-gradient-to-t from-[#FADF95] to-[#FFFFFF] min-h-screen flex flex-col">
     
-    <!-- Navbar -->
     <nav class="bg-[#1e2c4f] shadow-lg fixed w-full z-50 top-0">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-20">
-                <!-- Logo -->
                 <div class="flex items-center">
-                    <h1 class="text-2xl sm:text-3xl font-bold logo-text leading-tight tracking-tight">
+                    <a href="/" class="text-2xl sm:text-3xl font-bold logo-text leading-tight tracking-tight">
                         <span class="text-[#fdf4d9]">SERVE</span><span class="text-white">.</span><span class="text-[#f6ca50]">TIX</span>
-                    </h1>
+                    </a>
                 </div>
                 
-                <!-- Login / Profile -->
-                <div class="flex items-center space-x-4">
-                     {% if user.is_staff %}
-                    <button onclick="openDjangoFormModal('{% url 'match_create' %}')" 
+                <div class="flex items-center space-x-6">
+                    {% if user.is_staff %}
+                    <button onclick="openDjangoFormModal('{% url 'matches:match_create' %}')" 
                             class="bg-[#f6ca50] text-[#1e2c4f] px-4 py-2 rounded-lg hover:bg-yellow-400 font-medium text-sm sm:text-base">
                         Tambah Pertandingan
                     </button>
                     {% endif %}
 
                     {% if user.is_authenticated %}
-                        <a href="{% url 'user:profile' %}" 
-                           class="text-gray-200 hover:text-white font-medium">
-                            Profil ({{ user.username }})
-                        </a>
-                        <a href="{% url 'user:logout' %}" 
-                           class="bg-[#f6ca50] text-[#1e2c4f] px-5 py-2.5 rounded-full hover:bg-yellow-400 font-semibold transition duration-200 text-base inline-flex items-center gap-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1m0-9V5m0 14a2 2 0 002 2h3a2 2 0 002-2V5a2 2 0 00-2-2h-3a2 2 0 00-2 2v1" />
+                    <div class="relative">
+                        <a href="{% url 'user:profile' %}?tab=active_tickets" 
+                           id="ticket-modal-trigger" 
+                           onmouseover="openTicketDropdown()"
+                           onmouseout="closeTicketDropdown()"
+                           class="text-white hover:text-gray-300 transition duration-150 ease-in-out focus:outline-none p-1 block">
+
+                            <span class="sr-only">Tiket Aktif Saya</span>
+                            <svg class="w-7 h-7" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c.61 0 1.121-.448 1.121-1.002L18.602 7.5H5.482L5.09 5.626A1.12 1.12 0 0 0 4 4.5H2.25M16.5 20.25a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm-9 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" />
                             </svg>
-                            Logout
+                        </a>
+                
+                        <div id="ticket-dropdown-modal" 
+                             onmouseover="clearTimeout(closeTimer)" onmouseout="closeTicketDropdown()"
+                             class="absolute right-8 mt-4 w-80 sm:w-96 bg-[#fdf4d9] rounded-md shadow-2xl border border-gray-200 z-50 hidden origin-top-right transition-all duration-200 ease-out transform opacity-0 scale-95 animate-fadeIn"> 
+
+                               <div id="ticket-dropdown-content" class="max-h-[50vh] overflow-y-auto"> 
+                                   </div>
+                        </div>
+                    </div>
+
+                    <div class="relative">
+                        <button id="notifButton" 
+                                class="relative flex items-center justify-center w-11 h-11 rounded-full bg-[#fdf4d9]/10 hover:bg-[#fdf4d9]/20 transition duration-200 shadow-sm"
+                                aria-label="Notifikasi">
+                            <svg class="w-6 h-6 text-[#fdf4d9]" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10 2a6 6 0 00-6 6v2.586l-.707.707A1 1 0 004 13h12a1 1 0 00.707-1.707L16 10.586V8a6 6 0 00-6-6z"></path>
+                            </svg>
+                            <span id="notif-badge" 
+                                    class="absolute -top-1 -right-1 bg-[#f6ca50] text-[#1e2c4f] text-xs font-semibold rounded-full px-1.5 py-0.5 hidden shadow-md">
+                                    0
+                            </span>
+                        </button>
+
+                        <!-- Dropdown -->
+                        <div id="notifDropdown" 
+                            class="hidden absolute right-0 mt-3 w-80 bg-[#fdf4d9] rounded-xl shadow-xl border border-[#f6ca50]/50 overflow-hidden z-50 animate-fadeIn">
+                            <div class="p-3 border-b border-[#f6ca50]/40 flex justify-between items-center bg-[#f6ca50]/10">
+                                <span class="text-[#1e2c4f] font-semibold text-sm">Notifikasi</span>
+                                <button id="markAllReadBtn" class="text-xs text-[#1e2c4f]/70 hover:text-[#1e2c4f] transition">Tandai semua baca</button>
+                            </div>
+                            <div id="notifDropdownContent" class="max-h-64 overflow-auto">
+                                <div class="p-3 text-gray-600 text-sm">Memuat...</div>
+                            </div>
+                            <div class="p-2 text-center border-t border-[#f6ca50]/40 bg-[#fffaf0]">
+                                <a href="{% url 'notifications:notification_list' %}" class="text-sm text-[#f6ca50] font-medium hover:underline">
+                                    Lihat semua notifikasi
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                        <a href="{% url 'user:profile' %}" class="text-white hover:text-gray-300 transition duration-150 ease-in-out">
+                            <span class="sr-only">Profil Pengguna</span>
+                            <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A1.875 1.875 0 0 1 18 22.5H6a1.875 1.875 0 0 1-1.499-2.382Z" />
+                            </svg>
+                        </a>
+                        <a href="{% url 'user:logout' %}" class="bg-[#f6ca50] text-[#1e2c4f] px-5 py-2.5 rounded-full hover:bg-yellow-400 font-semibold transition duration-200 text-base inline-flex items-center gap-2">
+                             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1m0-9V5m0 14a2 2 0 002 2h3a2 2 0 002-2V5a2 2 0 00-2-2h-3a2 2 0 00-2 2v1" /></svg>
+                             Logout
                         </a>
                     {% else %}
-                        <a href="#" 
-                           class="bg-[#f6ca50] text-[#1e2c4f] px-6 py-2.5 rounded-full hover:bg-yellow-400 font-semibold transition duration-200 text-base inline-flex items-center gap-2">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 3a3 3 0 110 6 3 3 0 010-6zm0 14.2a7.22 7.22 0 01-6-3.22c.03-2 4-3.08 6-3.08s5.97 1.08 6 3.08a7.22 7.22 0 01-6 3.22z"/>
-                            </svg>
+                         <a href="{% url 'user:login' %}" class="bg-[#f6ca50] text-[#1e2c4f] px-6 py-2.5 rounded-full hover:bg-yellow-400 font-semibold transition duration-200 text-base inline-flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 3a3 3 0 110 6 3 3 0 010-6zm0 14.2a7.22 7.22 0 01-6-3.22c.03-2 4-3.08 6-3.08s5.97 1.08 6 3.08a7.22 7.22 0 01-6 3.22z"/></svg>
                             Masuk
-                        </a>
+                         </a>
                     {% endif %}
                 </div>
+              
             </div>
         </div>
     </nav>
 
-    <!-- Page Content -->
-    <div class="pt-20">
+    <main class="flex-grow pt-20"> 
         {% block content %}
         {% endblock %}
+    </main>
+
+    <div id="modal-backdrop"
+            class="fixed inset-0 bg-black bg-opacity-25 hidden z-40">
+        </div>
+
+    <div id="modal-container"
+        class="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
+        <div id="modal-content"
+            class="bg-white rounded-lg shadow-2xl max-h-full overflow-y-auto transform scale-95 opacity-0 transition-all duration-300 pointer-events-auto">
+        </div>
     </div>
 
     <div id="modalContainer"></div>
 
-    <footer class="bg-[#1e2c4f] text-white py-6 sm:py-8">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex flex-col">
-            <!-- SERVETIX - di atas -->
-            <div class="flex items-center mb-2">
-                <h2 class="text-xl sm:text-2xl font-bold">
-                    <span class="text-[#FDF4D9]">SERVE</span>.<span class="text-[#F6CA50]">TIX</span>
-                </h2>
-            </div>
-            
-            <!-- Copyright - di bawah -->
-            <div class="text-sm sm:text-base text-gray-300">
-                <p>© 2025 SERVETIX. All rights reserved.</p>
-            </div>
-        </div>
-    </div>
-    </footer>
 
-    <!-- Smooth Scroll -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
+<script>
+    // --- VARIABEL DAN KONSTANTA ---
+    const ticketDropdown = document.getElementById('ticket-dropdown-modal');
+    const backdrop = document.getElementById('modal-backdrop');
+    const ticketTrigger = document.getElementById('ticket-modal-trigger');
+    const dropdownContent = document.getElementById('ticket-dropdown-content');
+
+    let openTimer;
+    let closeTimer;
+    const HOVER_DELAY = 2000; 
+
+    // --- FUNGSI MODAL TENGAH (QR CODE) ---
+    function closeModal() {
+    try {
+        // Coba close modal matches dulu
+        document.getElementById('modalContainer').innerHTML = '';
+        window.modalFormURL = null;
+    } catch(e) {}
+    
+    try {
+        // Coba close modal baru
+        const modalContent = document.getElementById('modal-content');
+        modalContent.classList.remove('scale-100', 'opacity-100');
+        modalContent.classList.add('scale-95', 'opacity-0');
+        backdrop.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+    } catch(e) {}
+}
+
+    
+    
+    // --- FUNGSI DROPDOWN (HOVER PREVIEW) ---
+    function openTicketDropdown() {
+        clearTimeout(closeTimer);
+        
+        // Panggil HTMX jika konten belum dimuat
+        if (!dropdownContent.innerHTML.trim() || dropdownContent.innerHTML.includes('Loading')) {
+            htmx.ajax('GET', `{% url 'user:get_active_tickets_modal' %}`, { target: '#ticket-dropdown-content', swap: 'innerHTML' });
+        }
+        
+        // Tampilkan Dropdown
+        ticketDropdown.classList.remove('hidden', 'opacity-0', 'scale-95');
+        ticketDropdown.classList.add('opacity-100', 'scale-100');
+    }
+
+    function closeTicketDropdown() {
+        clearTimeout(openTimer);
+        
+        closeTimer = setTimeout(() => {
+            ticketDropdown.classList.remove('opacity-100', 'scale-100');
+            ticketDropdown.classList.add('opacity-0', 'scale-95');
+            
+            setTimeout(() => {
+                ticketDropdown.classList.add('hidden');
+            }, HOVER_DELAY); 
+        }, HOVER_DELAY); 
+    }
+
+    // --- LISTENER GLOBAL ---
+    
+    // 1. Hover Logic (Sudah ada di tag <a>)
+    // 2. Listener untuk Dropdown Modal itu sendiri (agar tidak jittery)
+    ticketDropdown.addEventListener('mouseover', () => clearTimeout(closeTimer));
+    ticketDropdown.addEventListener('mouseout', closeTicketDropdown);
+    
+    // 3. HTMX Listener Global (untuk Modal Tengah/QR Code)
+    document.body.addEventListener('htmx:afterSwap', (evt) => {
+        // Logika untuk Modal Tengah (QR Code)
+        if (evt.target.id === 'modal-content' && evt.detail.elt.innerHTML.trim() !== '') {
+            // Tampilkan backdrop untuk modal tengah
+            backdrop.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+            setTimeout(() => {
+                 document.getElementById('modal-content').classList.remove('scale-95', 'opacity-0');
+                 document.getElementById('modal-content').classList.add('scale-100', 'opacity-100');
+            }, 50);
+        } else if (evt.target.id === 'modal-content' && evt.detail.elt.innerHTML.trim() === '') {
+             // Jika modal tengah dikosongkan (ditutup)
+            closeModal();
+        }
+        
+        // Logika untuk Dropdown (agar tetap terbuka setelah konten dimuat HTMX)
+        if (evt.target.id === 'ticket-dropdown-content') {
+             openTicketDropdown();
+        }
+    });
+
+    // 4. Tutup Modal Tengah saat backdrop diklik
+    backdrop.addEventListener('click', closeModal);
+    
+    // 5. Listener untuk tombol close dari htmx (opsional)
+    document.body.addEventListener('htmx:beforeSwap', (evt) => {
+        if(evt.target.id === 'modal-content' && evt.detail.xhr.status === 204) {
+             closeModal();
+             evt.detail.shouldSwap = false; 
+        }
+    });
+
+    // 6. Tutup Dropdown saat tombol Lihat QR diklik (memicu modal tengah)
+    document.body.addEventListener('click', function(event) {
+        const clickedElement = event.target.closest('button[hx-target="#modal-content"]');
+
+        if (clickedElement) {
+            closeTicketDropdown();
+        }
+    });
+    document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('a[href^="#"]').forEach(anchor => {
                 anchor.addEventListener('click', function (e) {
                     const href = this.getAttribute('href');
@@ -108,122 +286,233 @@
                 });
             });
         });
+
+        window.modalFormURL = null;
+
+function getCookie(name) {
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+        cookie = cookie.trim();
+        if (cookie.startsWith(name + '=')) {
+            return decodeURIComponent(cookie.substring(name.length + 1));
+        }
+    }
+    return null;
+}
+
+async function openDjangoFormModal(url) {
+    window.modalFormURL = url;
+    try {
+        const response = await fetch(url);
+        const html = await response.text();
+        
+        document.getElementById('modalContainer').innerHTML = `
+            <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4" onclick="if(event.target === this) closeModal()">
+                <div class="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+                    ${html}
+                </div>
+            </div>
+        `;
+    } catch (error) {
+        alert('Error loading form');
+        window.location.href = url;
+    }
+}
+
+
+async function deleteMatch(url, button) {
+    if (!confirm('Yakin hapus pertandingan?')) return;
+    
+    button.disabled = true;
+    button.textContent = 'Menghapus...';
+    
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            const card = button.closest('.bg-\\[linear-gradient\\]');
+            card?.remove();
+            window.location.reload();
+        } else {
+            alert('Gagal menghapus');
+        }
+    } catch (error) {
+        alert('Network error');
+    } finally {
+        button.disabled = false;
+        button.textContent = 'Delete';
+    }
+}
+
+window.handleFormSubmit = async function(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    const submitBtn = form.querySelector('button[type="submit"]');
+    
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Menyimpan...';
+    
+    try {
+        const response = await fetch(window.modalFormURL, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+            }
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            closeModal();
+            window.location.reload();
+        } else {
+            alert('Error: ' + JSON.stringify(data.errors));
+        }
+    } catch (error) {
+        alert('Network error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Simpan';
+    }
+};
+
+window.setupModalForm = function() {
+    const form = document.getElementById('modalForm');
+    if (form) form.onsubmit = window.handleFormSubmit;
+};
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeModal();
+});
+</script>
+
+<footer class="bg-blue-950 text-white py-6 sm:py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="mb-4">
+            <h2 class="text-xl sm:text-2xl font-bold">
+              <span class="text-white">SERVE.</span><span class="text-yellow-300">TIX</span>
+            </h2>
+        </div>
+        
+        <div class="text-sm sm:text-base text-gray-300">
+            <p>© 2025 SERVETIX. All rights reserved.</p>
+        </div>
+    </div>
+  </footer>
     </script>
 
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-6 right-6 z-[60] space-y-2"></div>
     <script>
-    window.modalFormURL = null;
-
-    function getCookie(name) {
-        const cookies = document.cookie.split(';');
-        for (let cookie of cookies) {
+        function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            for (let cookie of document.cookie.split(';')) {
             cookie = cookie.trim();
             if (cookie.startsWith(name + '=')) {
-                return decodeURIComponent(cookie.substring(name.length + 1));
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
             }
         }
-        return null;
-    }
-
-    async function openDjangoFormModal(url) {
-        window.modalFormURL = url;
-        try {
-            const response = await fetch(url);
-            const html = await response.text();
-            
-            document.getElementById('modalContainer').innerHTML = `
-                <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4" onclick="if(event.target === this) closeModal()">
-                    <div class="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
-                        ${html}
-                    </div>
-                </div>
-            `;
-        } catch (error) {
-            alert('Error loading form');
-            window.location.href = url;
+        return cookieValue;
         }
-    }
+        const csrftoken = getCookie('csrftoken');
 
-    function closeModal() {
-        document.getElementById('modalContainer').innerHTML = '';
-        window.modalFormURL = null;
-    }
+        document.addEventListener('DOMContentLoaded', function() {
+        const badge = document.getElementById('notif-badge');
+        const dropdown = document.getElementById('notifDropdown');
+        const dropdownContent = document.getElementById('notifDropdownContent');
+        const notifButton = document.getElementById('notifButton');
+        const markAllReadBtn = document.getElementById('markAllReadBtn');
+        const toastContainer = document.getElementById('toast-container');
 
-    async function deleteMatch(url, button) {
-        if (!confirm('Yakin hapus pertandingan?')) return;
-        
-        button.disabled = true;
-        button.textContent = 'Menghapus...';
-        
-        try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': getCookie('csrftoken'),
-                },
-            });
-            
-            const data = await response.json();
+        // === Toggle dropdown ===
+        notifButton?.addEventListener('click', function(e) {
+            e.stopPropagation();
+            dropdown.classList.toggle('hidden');
+            if (!dropdown.classList.contains('hidden')) fetchUnreadAndRender();
+        });
+        document.addEventListener('click', e => {
+            if (!e.target.closest('#notifDropdown') && !e.target.closest('#notifButton')) {
+            dropdown.classList.add('hidden');
+            }
+        });
+
+        // === Mark all read ===
+        markAllReadBtn?.addEventListener('click', function(e) {
+            e.preventDefault();
+            fetch("{% url 'notifications:notification_mark_all_read' %}", {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrftoken }
+            })
+            .then(r => r.json())
+            .then(data => {
             if (data.success) {
-                const card = button.closest('.bg-\\[linear-gradient\\]');
-                card?.remove();
-                window.location.reload();
-            } else {
-                alert('Gagal menghapus');
+                badge.classList.add('hidden');
+                dropdownContent.innerHTML = '<div class="p-3 text-[#1e2c4f]/70 text-sm italic">Semua notifikasi sudah dibaca.</div>';
             }
-        } catch (error) {
-            alert('Network error');
-        } finally {
-            button.disabled = false;
-            button.textContent = 'Delete';
-        }
-    }
+            });
+        });
 
-    window.handleFormSubmit = async function(event) {
-        event.preventDefault();
-        const form = event.target;
-        const formData = new FormData(form);
-        const submitBtn = form.querySelector('button[type="submit"]');
-        
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Menyimpan...';
-        
-        try {
-            const response = await fetch(window.modalFormURL, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+        // === Poll unread count ===
+        let lastUnread = null;
+        function fetchUnreadAndRender() {
+            fetch("{% url 'notifications:notification_unread_count' %}")
+            .then(r => r.json())
+            .then(data => {
+                const count = data.unread_count || 0;
+                // badge update
+                if (count > 0) {
+                badge.textContent = count;
+                badge.classList.remove('hidden');
+                } else {
+                badge.classList.add('hidden');
                 }
-            });
-            
-            const data = await response.json();
-            if (data.success) {
-                closeModal();
-                window.location.reload();
-            } else {
-                alert('Error: ' + JSON.stringify(data.errors));
-            }
-        } catch (error) {
-            alert('Network error');
-        } finally {
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Simpan';
+                // isi dropdown
+                if (!dropdown.classList.contains('hidden')) dropdownContent.innerHTML = data.html;
+                // toast muncul kalau ada notif baru
+                if (lastUnread !== null && count > lastUnread) {
+                showToast(`🔔 Kamu punya ${count - (lastUnread||0)} notifikasi baru`);
+                }
+                lastUnread = count;
+            })
+            .catch(() => {});
         }
-    };
 
-    window.setupModalForm = function() {
-        const form = document.getElementById('modalForm');
-        if (form) form.onsubmit = window.handleFormSubmit;
-    };
+        // === Floating toast ===
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = "bg-[#fdf4d9] border-l-4 border-[#f6ca50] text-[#1e2c4f] px-5 py-3 rounded-lg shadow-md font-medium animate-slideUp";
+            toast.textContent = message;
+            toastContainer.appendChild(toast);
+            setTimeout(() => toast.classList.add('fade-out'), 3000);
+            setTimeout(() => toast.remove(), 3500);
+        }
 
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') closeModal();
-    });
-    </script>
+        // initial + interval
+        fetchUnreadAndRender();
+        setInterval(fetchUnreadAndRender, 30000);
+        });
+        </script>
 
+        <style>
+        @keyframes slideUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slideUp { animation: slideUp 0.4s ease-out; }
+        .fade-out { opacity: 0; transform: translateY(10px); transition: all .5s ease; }
+        </style>
 </body>
 </html>
-
 

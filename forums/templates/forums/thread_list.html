@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Forum Threads{% endblock title %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/forums.css' %}">
+
+<div class="max-w-5xl mx-auto mt-10 px-4">
+
+  <!-- HEADER -->
+  <h2 class="text-3xl font-bold text-brand-dark-blue mb-6 text-center">
+    <i class='far fa-comment-alt'></i> Forum Penggemar 
+  </h2>
+
+  <!-- ========================= -->
+  <!-- FORM BUAT THREAD BARU -->
+  <!-- ========================= -->
+  <div class="bg-[#fdf4d9] rounded-2xl shadow-md p-6 mb-8 border-l-4 border-brand-gold">
+    <h5 class="text-xl font-semibold text-brand-dark-blue mb-4">Buat Thread Baru</h5>
+
+    <form id="create-thread-form" method="post" class="space-y-4">
+      {% csrf_token %}
+      <div>
+        <label for="title" class="block font-semibold text-gray-700 mb-1">Judul</label>
+        <input type="text" name="title" id="title"
+               class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-gold"
+               placeholder="Tulis judul thread kamu..." required>
+      </div>
+
+      <div>
+        <label for="content" class="block font-semibold text-gray-700 mb-1">Isi Thread</label>
+        <textarea name="content" id="content" rows="3"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-gold"
+                  placeholder="Tulis isi diskusi kamu di sini..." required></textarea>
+      </div>
+
+      <button type="submit"
+              class="bg-brand-gold hover:bg-yellow-400 text-brand-dark-blue font-bold py-2 px-5 rounded-lg shadow transition">
+        Kirim
+      </button>
+    </form>
+  </div>
+
+  <!-- ========================= -->
+  <!-- DAFTAR THREAD DALAM CARD -->
+  <!-- ========================= -->
+  <div id="thread-list" class="space-y-6">
+    {% for thread in threads %}
+      {% include "forums/threads/thread_card.html" %}
+    {% empty %}
+      <p class="text-center text-gray-600 italic">Belum ada thread. Jadilah yang pertama!</p>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- ========================= -->
+<!-- JAVASCRIPT HANDLERS -->
+<!-- ========================= -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+// === Ambil CSRF token dari cookie ===
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+const csrftoken = getCookie('csrftoken');
+
+$(document).ready(function() {
+
+  // === CREATE THREAD ===
+  $('#create-thread-form').on('submit', function(e) {
+    e.preventDefault();
+    const formData = $(this).serialize();
+
+    $.ajax({
+      url: "{% url 'forums:create_thread_ajax' %}",
+      method: "POST",
+      headers: { 'X-CSRFToken': csrftoken },
+      data: formData,
+      success: function(response) {
+        if (response.success) {
+          // Tambahkan thread baru ke atas daftar
+          $('#thread-list').prepend(response.html);
+          $('#create-thread-form')[0].reset();
+
+          // Efek muncul lembut
+          $('#thread-list .box').first().hide().fadeIn(400);
+        } else {
+          alert("Terjadi kesalahan: " + JSON.stringify(response.errors));
+        }
+      },
+      error: function(xhr) {
+        console.log(xhr.responseText);
+        alert("Gagal membuat thread. Pastikan kamu sudah login.");
+      }
+    });
+  });
+
+  // === THREAD VOTING HANDLER ===
+  $(document).on('click', '.btn-upvote-thread, .btn-downvote-thread', function() {
+    const threadCard = $(this).closest('.thread-card');
+    const threadId = threadCard.data('thread-id');
+    const action = $(this).data('action');
+
+    $.ajax({
+      url: `/forums/ajax/${threadId}/vote/`,
+      method: "POST",
+      headers: { 'X-CSRFToken': csrftoken },
+      data: { action: action },
+      success: function(response) {
+        if (response.success) {
+          $(`#thread-${threadId}-score`).text(response.score);
+        } else {
+          alert("Gagal memberikan suara: " + (response.message || ''));
+        }
+      },
+      error: function(xhr) {
+        console.log(xhr.responseText);
+        alert("Terjadi kesalahan jaringan.");
+      }
+    });
+  });
+});
+</script>
+{% endblock content %}

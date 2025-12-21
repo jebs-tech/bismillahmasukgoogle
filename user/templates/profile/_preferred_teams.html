@@ -1,0 +1,41 @@
+{% comment %} 
+File: profile/_preferred_teams.html 
+{% endcomment %}
+
+<h2 class="text-2xl font-bold text-gray-800 mb-6">Tim Favorit</h2>
+
+{% if preferred_teams %}
+
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {% for team in preferred_teams %}
+            <div class="p-4 border rounded-lg text-center">
+                
+                <p class="font-semibold">{{ team.name }}</p>
+                
+            </div>
+        {% endfor %}
+    </div>
+
+{% else %}
+    
+    <div class="flex flex-col items-center justify-center pt-12 text-center">
+        
+        <svg class="w-16 h-16 text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.31h5.518a.562.562 0 0 1 .31.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.022a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 21.54a.562.562 0 0 1-.84-.61l1.285-5.022a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .31-.988h5.518a.563.563 0 0 0 .475-.31L11.48 3.5Z" />
+          </svg>
+
+        <h3 class="mt-4 text-xl font-semibold text-gray-700">Belum Ada Tim Favorit</h3>
+        <p class="mt-2 text-gray-500">Pilih tim favorit Anda untuk mendapatkan update terbaru.</p>
+
+        <button type="button" 
+                hx-get="{% url 'user:edit_profile' %}"
+                hx-target="#dashboard-content"
+                hx-swap="innerHTML"
+                class="mt-6 inline-block px-6 py-3 bg-brand-dark-blue text-white font-semibold rounded-lg shadow-md hover:bg-brand-light-blue transition duration-200 ease-in-out">
+            Edit Profil
+        </button>
+
+        
+    </div>
+
+{% endif %}

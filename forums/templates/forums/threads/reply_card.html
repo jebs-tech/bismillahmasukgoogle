@@ -1,0 +1,33 @@
+{% load static %}
+<!-- forums/threads/reply_card.html -->
+<div class="reply-box reply-item" id="reply-{{ reply.id }}" data-reply-id="{{ reply.id }}">
+  <!-- Isi Balasan -->
+  <p class="reply-content mb-1 text-gray-800">{{ reply.content }}</p>
+
+  <!-- Info Penulis -->
+  <small class="block text-sm text-gray-600 mb-1">
+    {% if reply.author %}
+      Oleh {{ reply.author.username }}
+    {% else %}
+      Oleh Anonim
+    {% endif %}
+    • {{ reply.created_at|date:"d M Y H:i" }}
+  </small>
+
+  <!-- Voting Section -->
+  <div class="vote-buttons flex items-center gap-2 mt-1">
+    <button class="btn-upvote-reply" data-action="upvote" title="Upvote"><i class='fas fa-arrow-circle-up' style='color:rgb(197, 185, 131)'></i></button>
+    <span id="reply-{{ reply.id }}-score">{{ reply.score }}</span>
+    <button class="btn-downvote-reply" data-action="downvote" title="Downvote"><i class='fas fa-arrow-circle-down' style='color:rgb(197, 185, 131)'></i></button>
+  </div>
+
+  <!-- Edit/Delete Buttons -->
+  {% if user.is_authenticated %}
+    {% if user == reply.author or user.is_superuser %}
+      <div class="mt-2 flex gap-2">
+        <button class="btn-edit" data-reply-id="{{ reply.id }}">Edit</button>
+        <button class="btn-delete" data-reply-id="{{ reply.id }}">Delete</button>
+      </div>
+    {% endif %}
+  {% endif %}
+</div>

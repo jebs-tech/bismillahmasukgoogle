@@ -1,0 +1,64 @@
+{% load static %}
+<div class="p-6">
+    <h2 class="text-2xl font-bold text-gray-800 mb-4">
+        {% if is_edit %}Edit Pertandingan{% else %}Tambah Pertandingan{% endif %}
+    </h2>
+    
+    <form method="POST" id="modalForm" onsubmit="return handleFormSubmit(event)">
+        {% csrf_token %}
+        <div class="space-y-4">
+            {% for field in form %}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    {{ field.label }}
+                </label>
+                
+                {% if field.field.widget.input_type == 'select' %}
+                    <select name="{{ field.name }}" id="{{ field.auto_id }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500" {% if field.field.required %}required{% endif %}>
+                        <option value="">---------</option>
+                        {% for value, label in field.field.choices %}
+                        <option value="{{ value }}" {% if field.value == value|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                {% elif 'time' in field.name or field.field.widget.input_type == 'datetime-local' %}
+                    <input 
+                        type="datetime-local" 
+                        name="{{ field.name }}" 
+                        id="{{ field.auto_id }}" 
+                        value="{% if field.value %}{{ field.value|date:'Y-m-d\\TH:i' }}{% endif %}" 
+                        class="w-full px-4 py-3 bg-white border-2 border-orange-300 rounded-lg text-gray-800 font-medium text-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
+                        {% if field.field.required %}required{% endif %}
+                    >
+                    <p class="text-xs text-gray-500 mt-1">Klik icon kalender di ujung kanan</p>
+                {% elif field.field.widget.input_type == 'textarea' %}
+                    <textarea name="{{ field.name }}" id="{{ field.auto_id }}" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500" {% if field.field.required %}required{% endif %}>{% if field.value %}{{ field.value }}{% endif %}</textarea>
+                {% else %}
+                    <input type="{{ field.field.widget.input_type|default:'text' }}" name="{{ field.name }}" id="{{ field.auto_id }}" value="{{ field.value|default:'' }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500" {% if field.field.required %}required{% endif %}>
+                {% endif %}
+                
+                {% if field.errors %}
+                <p class="text-red-600 text-sm mt-1">{{ field.errors.0 }}</p>
+                {% endif %}
+                {% if field.help_text %}
+                <p class="text-gray-500 text-xs mt-1">{{ field.help_text }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="mt-6 flex gap-4">
+            <button type="submit" class="bg-orange-500 text-white px-6 py-2 rounded-lg hover:bg-orange-600 font-medium">
+                Simpan
+            </button>
+            <button type="button" onclick="closeModal()" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 font-medium">
+                Batal
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+setTimeout(() => {
+    setupModalForm();
+}, 100);
+</script>
