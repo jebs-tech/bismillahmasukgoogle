@@ -537,3 +537,313 @@ def check_voucher_ajax(request):
     except Exception as e:
         print(f"Error saat cek voucher: {e}")
         return JsonResponse({'status': 'error', 'message': 'Kesalahan Server saat validasi.'}, status=500)
+
+
+# =====================
+# API ENDPOINTS UNTUK FLUTTER (Menggunakan CookieRequest)
+# =====================
+
+@csrf_exempt
+def api_get_categories(request):
+    """API endpoint untuk mendapatkan list kategori tiket (Flutter)"""
+    try:
+        categories = SeatCategory.objects.all().order_by('-price')
+        categories_data = [{
+            'id': cat.id,
+            'name': cat.name,
+            'price': cat.price,
+            'color': cat.color,
+        } for cat in categories]
+        
+        return JsonResponse({
+            'status': 'success',
+            'data': categories_data
+        })
+    except Exception as e:
+        logger.error(f"Error in api_get_categories: {str(e)}")
+        return JsonResponse({'status': 'error', 'message': 'Terjadi kesalahan server'}, status=500)
+
+
+@csrf_exempt
+@require_POST
+def api_simpan_pembelian(request):
+    """API endpoint untuk menyimpan data pembelian (Flutter)"""
+    try:
+        # Parse JSON body
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'status': 'error', 'message': 'Format JSON tidak valid'}, status=400)
+        
+        # Validasi input
+        match_id = data.get('match_id')
+        kategori_id = data.get('kategori_id')
+        nama_lengkap = data.get('nama_lengkap', '').strip()
+        email = data.get('email', '').strip()
+        nomor_telepon = data.get('nomor_telepon', '').strip()
+        tickets = data.get('tickets', [])
+        
+        if not match_id or not kategori_id or not tickets:
+            return JsonResponse({'status': 'error', 'message': 'Data tidak lengkap'}, status=400)
+        
+        if not nama_lengkap or not email or not nomor_telepon:
+            return JsonResponse({'status': 'error', 'message': 'Nama lengkap, email, dan nomor telepon wajib diisi'}, status=400)
+        
+        # Validasi format email
+        if '@' not in email or '.' not in email.split('@')[-1]:
+            return JsonResponse({'status': 'error', 'message': 'Format email tidak valid'}, status=400)
+        
+        # Get match dan kategori
+        try:
+            match = Match.objects.get(id=match_id)
+            kategori = SeatCategory.objects.get(id=kategori_id)
+        except (Match.DoesNotExist, SeatCategory.DoesNotExist) as e:
+            return JsonResponse({'status': 'error', 'message': 'Match atau kategori tidak ditemukan'}, status=404)
+        
+        # Hitung total harga
+        jumlah_tiket = len(tickets)
+        total_harga = jumlah_tiket * kategori.price
+        
+        # Cek seat tersedia
+        total_available = Seat.objects.filter(
+            match=match,
+            category=kategori,
+            is_booked=False
+        ).count()
+        
+        if total_available < jumlah_tiket:
+            return JsonResponse({
+                'status': 'error',
+                'message': f'Tidak cukup kursi tersedia. Tersedia: {total_available}, Dibutuhkan: {jumlah_tiket}'
+            }, status=400)
+        
+        # Ambil seat yang tersedia
+        available_seats = list(Seat.objects.filter(
+            match=match,
+            category=kategori,
+            is_booked=False
+        )[:jumlah_tiket])
+        
+        if len(available_seats) < jumlah_tiket:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Tidak cukup kursi tersedia saat ini. Silakan coba lagi.'
+            }, status=400)
+        
+        # Simpan seat IDs untuk update
+        seat_ids = [seat.id for seat in available_seats]
+        
+        # Buat Pembelian
+        try:
+            user_obj = request.user if request.user.is_authenticated else None
+            pembelian = Pembelian.objects.create(
+                match=match,
+                user=user_obj,
+                nama_lengkap_pembeli=nama_lengkap,
+                email=email,
+                nomor_telepon=nomor_telepon,
+                total_price=total_harga,
+                status='PENDING'
+            )
+            
+            # Hubungkan seat ke pembelian
+            pembelian.seats.set(available_seats)
+            
+            # Update is_booked untuk setiap seat
+            Seat.objects.filter(id__in=seat_ids).update(is_booked=True)
+            
+            return JsonResponse({
+                'status': 'success',
+                'order_id': pembelian.order_id,
+                'message': 'Pembelian berhasil dibuat'
+            })
+        except Exception as e:
+            logger.error(f"Error creating Pembelian: {str(e)}")
+            return JsonResponse({
+                'status': 'error',
+                'message': f'Gagal membuat pembelian: {str(e)}'
+            }, status=500)
+            
+    except Exception as e:
+        logger.error(f"Error in api_simpan_pembelian: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return JsonResponse({'status': 'error', 'message': f'Terjadi kesalahan server: {str(e)}'}, status=500)
+
+
+@csrf_exempt
+def api_get_payment_detail(request, order_id):
+    """API endpoint untuk mendapatkan detail pembayaran (Flutter)"""
+    try:
+        try:
+            pembelian = Pembelian.objects.select_related('match', 'match__venue').get(order_id=order_id)
+        except Pembelian.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Pembelian tidak ditemukan'}, status=404)
+        
+        # Ambil data match
+        match_data = None
+        if pembelian.match:
+            match_data = {
+                'id': pembelian.match.id,
+                'title': pembelian.match.title or f'Match {pembelian.match.id}',
+                'venue': pembelian.match.venue.name if pembelian.match.venue else None,
+                'start_time': pembelian.match.start_time.isoformat() if pembelian.match.start_time else None,
+            }
+        
+        return JsonResponse({
+            'status': 'success',
+            'data': {
+                'order_id': pembelian.order_id,
+                'nama_lengkap_pembeli': pembelian.nama_lengkap_pembeli,
+                'email': pembelian.email,
+                'nomor_telepon': pembelian.nomor_telepon,
+                'total_price': pembelian.total_price,
+                'status': pembelian.status,
+                'status_display': pembelian.get_status_display(),
+                'metode_pembayaran': pembelian.metode_pembayaran,
+                'tanggal_pembelian': pembelian.tanggal_pembelian.isoformat() if pembelian.tanggal_pembelian else None,
+                'match': match_data,
+                'kode_voucher': pembelian.kode_voucher,
+            }
+        })
+    except Exception as e:
+        logger.error(f"Error in api_get_payment_detail: {str(e)}")
+        return JsonResponse({'status': 'error', 'message': 'Terjadi kesalahan server'}, status=500)
+
+
+@csrf_exempt
+@require_POST
+def api_proses_bayar(request, order_id):
+    """API endpoint untuk proses pembayaran dari Flutter"""
+    try:
+        try:
+            pembelian = Pembelian.objects.select_related('match', 'match__venue').get(order_id=order_id, status='PENDING')
+        except Pembelian.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Pembelian tidak ditemukan atau sudah diproses'}, status=404)
+        
+        # Parse request data
+        try:
+            if request.content_type and 'multipart/form-data' in request.content_type:
+                metode = request.POST.get('metode_pembayaran')
+                bukti_transfer = request.FILES.get('bukti_transfer')
+            else:
+                data = json.loads(request.body)
+                metode = data.get('metode_pembayaran')
+                bukti_transfer = None
+        except (json.JSONDecodeError, Exception) as e:
+            return JsonResponse({'status': 'error', 'message': 'Format data tidak valid'}, status=400)
+        
+        if not metode:
+            return JsonResponse({'status': 'error', 'message': 'Metode pembayaran wajib diisi'}, status=400)
+        
+        metode_bank = ['BRI', 'BCA', 'Mandiri']
+        if metode in metode_bank and not bukti_transfer:
+            return JsonResponse({'status': 'error', 'message': 'Bukti transfer wajib untuk metode bank'}, status=400)
+        
+        # Update pembelian
+        pembelian.metode_pembayaran = metode
+        if bukti_transfer:
+            pembelian.bukti_transfer = bukti_transfer
+        pembelian.status = 'CONFIRMED'
+        
+        # Assign user jika ada
+        if request.user.is_authenticated:
+            pembelian.user = request.user
+        elif pembelian.email:
+            try:
+                user_by_email = User.objects.get(email=pembelian.email)
+                pembelian.user = user_by_email
+            except User.DoesNotExist:
+                pass
+        
+        pembelian.save()
+        
+        # Generate QR codes untuk setiap seat
+        etickets = []
+        for seat in pembelian.seats.select_related('category').all():
+            qr_data = f"SERVETIX|{pembelian.order_id}|SEAT-{seat.id}"
+            seat.qrcode_data = qr_data
+            
+            qr_file = generate_qr_code(qr_data)
+            filename = f"{pembelian.order_id}_seat_{seat.id}.png"
+            
+            try:
+                seat.file_qr_code.save(filename, qr_file, save=True)
+                seat.refresh_from_db()
+            except Exception as e:
+                logger.error(f"Error saving QR code for seat {seat.id}: {str(e)}")
+            
+            # Build full URL untuk QR code
+            qr_url = None
+            if seat.file_qr_code:
+                qr_url = request.build_absolute_uri(seat.file_qr_code.url)
+            
+            etickets.append({
+                'seat_id': seat.id,
+                'seat': f"{seat.row}{seat.col}",
+                'category': seat.category.name if seat.category else '',
+                'qr_url': qr_url,
+                'qr_data': qr_data,
+            })
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Pembayaran berhasil, e-ticket siap',
+            'data': {
+                'order_id': pembelian.order_id,
+                'match_title': pembelian.match.title if pembelian.match else 'N/A',
+                'match_venue': pembelian.match.venue.name if pembelian.match and pembelian.match.venue else 'N/A',
+                'match_date': pembelian.match.start_time.strftime('%d %B %Y, %H:%M') if pembelian.match and pembelian.match.start_time else 'N/A',
+                'tickets': etickets,
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in api_proses_bayar: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return JsonResponse({'status': 'error', 'message': 'Terjadi kesalahan saat memproses pembayaran'}, status=500)
+
+
+@csrf_exempt
+@require_POST
+def api_check_voucher(request):
+    """API endpoint untuk check voucher (Flutter)"""
+    try:
+        data = json.loads(request.body)
+        voucher_code = data.get('code', '').strip()
+        total_amount_raw = data.get('total', 0)
+        
+        if not voucher_code:
+            return JsonResponse({'status': 'error', 'message': 'Kode wajib diisi'}, status=400)
+        
+        try:
+            total_amount = float(str(total_amount_raw).replace('Rp', '').replace(',', '').replace('.', '').strip())
+        except ValueError:
+            return JsonResponse({'status': 'error', 'message': 'Format total tidak valid'}, status=400)
+        
+        # Validasi voucher
+        discount_amount, error_message = validate_and_apply_voucher(
+            voucher_code,
+            request.user if request.user.is_authenticated else None,
+            total_amount
+        )
+        
+        if error_message:
+            return JsonResponse({'status': 'error', 'message': error_message}, status=400)
+        
+        discount_value = float(discount_amount or 0)
+        new_total = max(total_amount - discount_value, 0)
+        
+        return JsonResponse({
+            'status': 'success',
+            'discount_amount': discount_value,
+            'new_total': new_total,
+            'code': voucher_code
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        logger.error(f"Error in api_check_voucher: {str(e)}")
+        return JsonResponse({'status': 'error', 'message': 'Kesalahan Server saat validasi'}, status=500)
