@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     'notifications',
     'apscheduler',
     'qr_code',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
